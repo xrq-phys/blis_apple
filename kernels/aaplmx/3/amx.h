@@ -148,7 +148,7 @@ struct amx_state {
   union amx_row z[64];
 };
 
-void store_amx_state(struct amx_state *state) {
+BLIS_INLINE void store_amx_state(struct amx_state *state) {
   memset(state, 0xAA, sizeof *state);
   for (uint64_t i = 0; i < 8; i++) {
     AMX_STX((i << 56) | (uint64_t)&state->x[i]);
@@ -161,7 +161,7 @@ void store_amx_state(struct amx_state *state) {
   }
 }
 
-void load_amx_state(struct amx_state *state) {
+BLIS_INLINE void load_amx_state(struct amx_state *state) {
   for (uint64_t i = 0; i < 8; i++) {
     AMX_LDX((i << 56) | (uint64_t)&state->x[i]);
   }
