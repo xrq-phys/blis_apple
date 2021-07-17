@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+// Const memory for zeroizing as
+//  zeroizing instruction is not found yet.
+const static uint8_t amx_zeros[64] = { 0 };
+
 // BLIs Single-precision GEMM for Apple Matrix Coprocessor,
 //   implemented with MACros, of size 32 * 32.
 void bli_sgemm_aaplmx_mac_32x32
@@ -60,10 +64,12 @@ void bli_sgemm_aaplmx_mac_32x32
     //  either.
     AMX_START();
 
-    // TODO: Other ways to zeroize Z.
-    const static float zeros[16] = { 0 };
-    for ( int i = 0; i < 16 * 4; ++i )
-        AMX_MEM( LDZ, zeros, i );
+    // Zeroize Z.
+    AMX_MEM( LDY, amx_zeros, 0 );
+    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 0 );
+    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 1 );
+    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 2 );
+    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 3 );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
@@ -257,10 +263,12 @@ void bli_dgemm_aaplmx_mac_16x16
     //  either.
     AMX_START();
 
-    // TODO: Other ways to zeroize Z.
-    const static double zeros[8] = { 0 };
-    for ( int i = 0; i < 8 * 8; ++i )
-        AMX_MEM( LDZ, zeros, i );
+    // Zeroize Z.
+    AMX_MEM( LDY, amx_zeros, 0 );
+    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 );
+    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 1 );
+    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 2 );
+    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 3 );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
