@@ -27,6 +27,12 @@ void bli_sgemm_aaplmx_mac_32x32
     void* a_next = bli_auxinfo_next_a( data );
     void* b_next = bli_auxinfo_next_b( data );
 
+    // As current the RE work has not discovered any
+    //  broadcasting-load instruction yet, use this
+    //  halfway solution for alpha & beta.
+    static float dalpha[16] = { 0 };
+    static float beta_c[16] = { 0 };
+
     // Isotropic kernel.
     if ( cs_c == 1 && rs_c != 1 )
         return bli_sgemm_aaplmx_mac_32x32
@@ -39,39 +45,25 @@ void bli_sgemm_aaplmx_mac_32x32
     // TODO: Support generic strided storage.
     assert( rs_c == 1 );
 
-    // TODO: Support Alpha.
-    assert( *alpha == 1.0 );
+    // Duplicate alpha & beta.
+    if ( dalpha[0] != *alpha - 1.0 )
+        for ( int i = 0; i < 16; ++i )
+            dalpha[i] = *alpha - 1.0;
 
-    // TODO: Move this to context init.
+    if ( beta_c[0] != *beta )
+        for ( int i = 0; i < 16; ++i )
+            beta_c[i] = *beta;
+
+    // As the BLIS API has no self-finalization,
+    //  AMX_START and AMX_END has to be included within
+    //  kernels. They do not seem to take much time,
+    //  either.
     AMX_START();
 
     // TODO: Other ways to zeroize Z.
     const static float zeros[16] = { 0 };
-    if ( *beta == 0.0 )
-        for ( int i = 0; i < 16 * 4; ++i )
-            AMX_MEM( LDZ, zeros, i );
-    else if ( *beta == 1.0 )
-    {
-        float *c_ldr = c;
-        if ( rs_c == 1 )
-        {
-            // Load blocks (0, 0) and (1, 0).
-            for (int i = 0; i < 16; ++i) {
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 0 , i * 4 + 0 );
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 16, i * 4 + 1 );
-            }
-            c_ldr += 16 * cs_c;
-
-            // Load blocks (0, 1) and (1, 1).
-            for (int i = 0; i < 16; ++i) {
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 0 , i * 4 + 2 );
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 16, i * 4 + 3 );
-            }
-        }
-    }
-    else
-        // TODO: Support Beta.
-        assert( false );
+    for ( int i = 0; i < 16 * 4; ++i )
+        AMX_MEM( LDZ, zeros, i );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
@@ -136,6 +128,24 @@ void bli_sgemm_aaplmx_mac_32x32
         b += 32;
     }
 
+    // Load alpha & beta.
+    AMX_MEM( LDY, dalpha, 0 );
+    AMX_MEM( LDY, beta_c, 1 );
+
+    // Multiply by alpha.
+    if ( *alpha != 1.0 )
+        for ( int i = 0; i < 16; ++i ) {
+            AMX_EXTRX_REGALIGNED( i * 4 + 0, 4 );
+            AMX_EXTRX_REGALIGNED( i * 4 + 1, 5 );
+            AMX_EXTRX_REGALIGNED( i * 4 + 2, 6 );
+            AMX_EXTRX_REGALIGNED( i * 4 + 3, 7 );
+
+            AMX_FMA32_SELCOL_REGALIGNED( i, 4, 0, 0 );
+            AMX_FMA32_SELCOL_REGALIGNED( i, 5, 0, 1 );
+            AMX_FMA32_SELCOL_REGALIGNED( i, 6, 0, 2 );
+            AMX_FMA32_SELCOL_REGALIGNED( i, 7, 0, 3 );
+        }
+
     __asm__ volatile
     (
       "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
@@ -150,6 +160,34 @@ void bli_sgemm_aaplmx_mac_32x32
       : [a_next] "r" (a_next),
         [b_next] "r" (b_next)
     );
+
+    // Load and multiply by beta.
+    // Write into Z registers.
+    if ( *beta != 0.0 )
+    {
+        float *c_ldr = c;
+        if ( rs_c == 1 )
+        {
+            // Load blocks (0, 0) and (1, 0).
+            for (int i = 0; i < 16; ++i) {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0 , 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 16, 3 );
+
+                AMX_FMA32_SELCOL_REGALIGNED( i, 2, 1, 0 );
+                AMX_FMA32_SELCOL_REGALIGNED( i, 3, 1, 1 );
+            }
+            c_ldr += 16 * cs_c;
+
+            // Load blocks (0, 1) and (1, 1).
+            for (int i = 0; i < 16; ++i) {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0 , 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 16, 3 );
+
+                AMX_FMA32_SELCOL_REGALIGNED( i, 2, 1, 2 );
+                AMX_FMA32_SELCOL_REGALIGNED( i, 3, 1, 3 );
+            }
+        }
+    }
 
     if ( rs_c == 1 )
     {
@@ -186,6 +224,12 @@ void bli_dgemm_aaplmx_mac_16x16
     void* a_next = bli_auxinfo_next_a( data );
     void* b_next = bli_auxinfo_next_b( data );
 
+    // As current the RE work has not discovered any
+    //  broadcasting-load instruction yet, use this
+    //  halfway solution for alpha & beta.
+    static double dalpha[8] = { 0 };
+    static double beta_c[8] = { 0 };
+
     // Isotropic kernel.
     if ( cs_c == 1 && rs_c != 1 )
         return bli_dgemm_aaplmx_mac_16x16
@@ -198,39 +242,25 @@ void bli_dgemm_aaplmx_mac_16x16
     // TODO: Support generic strided storage.
     assert( rs_c == 1 );
 
-    // TODO: Support Alpha.
-    assert( *alpha == 1.0 );
+    // Duplicate alpha & beta.
+    if ( dalpha[0] != *alpha - 1.0 )
+        for ( int i = 0; i < 8; ++i )
+            dalpha[i] = *alpha - 1.0;
 
-    // TODO: Move this to context init.
+    if ( beta_c[0] != *beta )
+        for ( int i = 0; i < 8; ++i )
+            beta_c[i] = *beta;
+
+    // As the BLIS API has no self-finalization,
+    //  AMX_START and AMX_END has to be included within
+    //  kernels. They do not seem to take much time,
+    //  either.
     AMX_START();
 
     // TODO: Other ways to zeroize Z.
     const static double zeros[8] = { 0 };
-    if ( *beta == 0.0 )
-        for ( int i = 0; i < 8 * 8; ++i )
-            AMX_MEM( LDZ, zeros, i );
-    else if ( *beta == 1.0 )
-    {
-        double *c_ldr = c;
-        if ( rs_c == 1 )
-        {
-            // Load blocks (0, 0) and (1, 0).
-            for (int i = 0; i < 8; ++i) {
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 0, i * 8 + 0 );
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 8, i * 8 + 1 );
-            }
-            c_ldr += 8 * cs_c;
-
-            // Load blocks (0, 1) and (1, 1).
-            for (int i = 0; i < 8; ++i) {
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 0, i * 8 + 2 );
-                AMX_MEM( LDZ, c_ldr + i * cs_c + 8, i * 8 + 3 );
-            }
-        }
-    }
-    else
-        // TODO: Support Beta.
-        assert( false );
+    for ( int i = 0; i < 8 * 8; ++i )
+        AMX_MEM( LDZ, zeros, i );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
@@ -295,6 +325,24 @@ void bli_dgemm_aaplmx_mac_16x16
         b += 16;
     }
 
+    // Load alpha & beta.
+    AMX_MEM( LDY, dalpha, 0 );
+    AMX_MEM( LDY, beta_c, 1 );
+
+    // Multiply by alpha.
+    if ( *alpha != 1.0 )
+        for ( int i = 0; i < 8; ++i ) {
+            AMX_EXTRX_REGALIGNED( i * 8 + 0, 4 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 1, 5 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 2, 6 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 3, 7 );
+
+            AMX_FMA64_SELCOL_REGALIGNED( i, 4, 0, 0 );
+            AMX_FMA64_SELCOL_REGALIGNED( i, 5, 0, 1 );
+            AMX_FMA64_SELCOL_REGALIGNED( i, 6, 0, 2 );
+            AMX_FMA64_SELCOL_REGALIGNED( i, 7, 0, 3 );
+        }
+
     __asm__ volatile
     (
       "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
@@ -309,6 +357,34 @@ void bli_dgemm_aaplmx_mac_16x16
       : [a_next] "r" (a_next),
         [b_next] "r" (b_next)
     );
+
+    // Load and multiply by beta.
+    // Write into Z registers.
+    if ( *beta != 0.0 )
+    {
+        double *c_ldr = c;
+        if ( rs_c == 1 )
+        {
+            // Load blocks (0, 0) and (1, 0).
+            for (int i = 0; i < 8; ++i) {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 3 );
+
+                AMX_FMA64_SELCOL_REGALIGNED( i, 2, 1, 0 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 3, 1, 1 );
+            }
+            c_ldr += 8 * cs_c;
+
+            // Load blocks (0, 1) and (1, 1).
+            for (int i = 0; i < 8; ++i) {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 3 );
+
+                AMX_FMA64_SELCOL_REGALIGNED( i, 2, 1, 2 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 3, 1, 3 );
+            }
+        }
+    }
 
     if ( rs_c == 1 )
     {
