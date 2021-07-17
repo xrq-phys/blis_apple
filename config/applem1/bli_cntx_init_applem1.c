@@ -50,17 +50,17 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	(
 	  2,
 	  BLIS_GEMM_UKR, BLIS_FLOAT,    bli_sgemm_aaplmx_mac_32x32, FALSE,
-	  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_armv8a_asm_6x8,   FALSE,
+	  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_aaplmx_mac_16x16, FALSE,
 	  cntx
 	);
 
 	// Initialize level-3 blocksize objects with architecture-specific values.
 	//                                           s      d      c      z
-	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,     6,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,     8,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   512,   240,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    16,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   512,   256,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  3072,  2048,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  8192,  8192,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NC ], 16384,  8192,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache
 	// blocksizes (and multiples) for native execution.

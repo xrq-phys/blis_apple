@@ -12,4 +12,10 @@
 #define AMX_FMA32_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
   AMX_FMA32_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
 
+#define AMX_FMA64_COMMON(PADROWS, PADCOLS, ZREGS) \
+  AMX_FMA64( (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) )
+
+#define AMX_FMA64_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
+  AMX_FMA64_COMMON( ((uint64_t)XREG << 6), ((uint64_t)YREG << 6), ZREGS )
+
 
