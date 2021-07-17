@@ -293,6 +293,12 @@ CNTX_INIT_PROTS( generic )
 #include "bli_kernels_armv7a.h"
 #endif
 
+// -- Apple M1 custom coprocessor --
+
+#ifdef BLIS_KERNELS_AAPLMX
+#include "bli_kernels_aaplmx.h"
+#endif
+
 // -- IBM Power --
 
 #ifdef BLIS_KERNELS_POWER10
