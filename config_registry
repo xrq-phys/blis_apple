@@ -13,6 +13,8 @@ intel64:     skx knl haswell sandybridge penryn generic
 amd64:       zen2 zen excavator steamroller piledriver bulldozer generic
 # NOTE: ARM families will remain disabled until runtime hardware detection
 # logic is added to BLIS.
+# NOTE: Additionally, Apple processors cannot be detected. Hence no
+# auto-detection code is hereby written for A14 or M1.
 #arm64:       cortexa57 generic
 #arm32:       cortexa15 cortexa9 generic
 
@@ -34,6 +36,7 @@ bulldozer:   bulldozer
 # ARM architectures.
 armsve:      armsve/armsve
 a64fx:       a64fx/armsve
+applem1:     applem1/armv8a/aaplmx
 thunderx2:   thunderx2/armv8a
 cortexa57:   cortexa57/armv8a
 cortexa53:   cortexa53/armv8a

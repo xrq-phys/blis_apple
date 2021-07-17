@@ -154,6 +154,11 @@ void bli_gks_init( void )
 		                                              bli_cntx_init_a64fx_ref,
 		                                              bli_cntx_init_a64fx_ind );
 #endif
+#ifdef BLIS_CONFIG_APPLEM1
+		bli_gks_register_cntx( BLIS_ARCH_APPLEM1,     bli_cntx_init_applem1,
+		                                              bli_cntx_init_applem1_ref,
+		                                              bli_cntx_init_applem1_ind );
+#endif
 #ifdef BLIS_CONFIG_CORTEXA15
 		bli_gks_register_cntx( BLIS_ARCH_CORTEXA15,   bli_cntx_init_cortexa15,
 		                                              bli_cntx_init_cortexa15_ref,
