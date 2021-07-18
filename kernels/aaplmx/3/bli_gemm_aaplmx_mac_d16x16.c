@@ -34,7 +34,7 @@ void bli_sgemm_aaplmx_mac_32x32
     // As current the RE work has not discovered any
     //  broadcasting-load instruction yet, use this
     //  halfway solution for alpha & beta.
-    static float dalpha[16] = { 0 };
+    static float alphac[16] = { 0 };
     static float beta_c[16] = { 0 };
 
     // Isotropic kernel.
@@ -50,9 +50,9 @@ void bli_sgemm_aaplmx_mac_32x32
     assert( rs_c == 1 );
 
     // Duplicate alpha & beta.
-    if ( dalpha[0] != *alpha - 1.0 )
+    if ( alphac[0] != *alpha )
         for ( int i = 0; i < 16; ++i )
-            dalpha[i] = *alpha - 1.0;
+            alphac[i] = *alpha;
 
     if ( beta_c[0] != *beta )
         for ( int i = 0; i < 16; ++i )
@@ -65,11 +65,12 @@ void bli_sgemm_aaplmx_mac_32x32
     AMX_START();
 
     // Zeroize Z.
+    // AMX_START seems clearing already?
     AMX_MEM( LDY, amx_zeros, 0 );
-    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 0 );
-    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 1 );
-    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 2 );
-    AMX_FMA32_COMMON_REGALIGNED( 0, 0, 3 );
+    AMX_FMUL32_COMMON_REGALIGNED( 0, 0, 0 );
+    AMX_FMUL32_COMMON_REGALIGNED( 0, 0, 1 );
+    AMX_FMUL32_COMMON_REGALIGNED( 0, 0, 2 );
+    AMX_FMUL32_COMMON_REGALIGNED( 0, 0, 3 );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
@@ -135,7 +136,7 @@ void bli_sgemm_aaplmx_mac_32x32
     }
 
     // Load alpha & beta.
-    AMX_MEM( LDY, dalpha, 0 );
+    AMX_MEM( LDY, alphac, 0 );
     AMX_MEM( LDY, beta_c, 1 );
 
     // Multiply by alpha.
@@ -146,10 +147,10 @@ void bli_sgemm_aaplmx_mac_32x32
             AMX_EXTRX_REGALIGNED( i * 4 + 2, 6 );
             AMX_EXTRX_REGALIGNED( i * 4 + 3, 7 );
 
-            AMX_FMA32_SELCOL_REGALIGNED( i, 4, 0, 0 );
-            AMX_FMA32_SELCOL_REGALIGNED( i, 5, 0, 1 );
-            AMX_FMA32_SELCOL_REGALIGNED( i, 6, 0, 2 );
-            AMX_FMA32_SELCOL_REGALIGNED( i, 7, 0, 3 );
+            AMX_FMUL32_SELCOL_REGALIGNED( i, 4, 0, 0 );
+            AMX_FMUL32_SELCOL_REGALIGNED( i, 5, 0, 1 );
+            AMX_FMUL32_SELCOL_REGALIGNED( i, 6, 0, 2 );
+            AMX_FMUL32_SELCOL_REGALIGNED( i, 7, 0, 3 );
         }
 
     __asm__ volatile
@@ -233,7 +234,7 @@ void bli_dgemm_aaplmx_mac_16x16
     // As current the RE work has not discovered any
     //  broadcasting-load instruction yet, use this
     //  halfway solution for alpha & beta.
-    static double dalpha[8] = { 0 };
+    static double alphac[8] = { 0 };
     static double beta_c[8] = { 0 };
 
     // Isotropic kernel.
@@ -249,9 +250,9 @@ void bli_dgemm_aaplmx_mac_16x16
     assert( rs_c == 1 );
 
     // Duplicate alpha & beta.
-    if ( dalpha[0] != *alpha - 1.0 )
+    if ( alphac[0] != *alpha )
         for ( int i = 0; i < 8; ++i )
-            dalpha[i] = *alpha - 1.0;
+            alphac[i] = *alpha;
 
     if ( beta_c[0] != *beta )
         for ( int i = 0; i < 8; ++i )
@@ -265,10 +266,10 @@ void bli_dgemm_aaplmx_mac_16x16
 
     // Zeroize Z.
     AMX_MEM( LDY, amx_zeros, 0 );
-    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 );
-    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 1 );
-    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 2 );
-    AMX_FMA64_COMMON_REGALIGNED( 0, 0, 3 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 0 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 1 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 2 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 3 );
 
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
@@ -334,7 +335,7 @@ void bli_dgemm_aaplmx_mac_16x16
     }
 
     // Load alpha & beta.
-    AMX_MEM( LDY, dalpha, 0 );
+    AMX_MEM( LDY, alphac, 0 );
     AMX_MEM( LDY, beta_c, 1 );
 
     // Multiply by alpha.
@@ -345,10 +346,10 @@ void bli_dgemm_aaplmx_mac_16x16
             AMX_EXTRX_REGALIGNED( i * 8 + 2, 6 );
             AMX_EXTRX_REGALIGNED( i * 8 + 3, 7 );
 
-            AMX_FMA64_SELCOL_REGALIGNED( i, 4, 0, 0 );
-            AMX_FMA64_SELCOL_REGALIGNED( i, 5, 0, 1 );
-            AMX_FMA64_SELCOL_REGALIGNED( i, 6, 0, 2 );
-            AMX_FMA64_SELCOL_REGALIGNED( i, 7, 0, 3 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 4, 0, 0 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 5, 0, 1 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 6, 0, 2 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 7, 0, 3 );
         }
 
     __asm__ volatile
