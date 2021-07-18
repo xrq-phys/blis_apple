@@ -54,6 +54,15 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	  cntx
 	);
 
+	// Set packing routines.
+	bli_cntx_set_packm_kers
+	(
+	  1, // 2,
+	  BLIS_PACKM_32XK_KER, BLIS_FLOAT,  bli_spackm_aaplmx_mac_32xk,
+	  // BLIS_PACKM_16XK_KER, BLIS_DOUBLE, bli_dpackm_aaplmx_mac_16xk,
+	  cntx
+	);
+
 	// Initialize level-3 blocksize objects with architecture-specific values.
 	//                                           s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
