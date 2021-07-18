@@ -59,7 +59,7 @@ void bli_sgemm_aaplmx_mac_32x32
             beta_c[i] = *beta;
 
     // As the BLIS API has no self-finalization,
-    //  AMX_START and AMX_END has to be included within
+    //  AMX_START and AMX_STOP has to be included within
     //  kernels. They do not seem to take much time,
     //  either.
     AMX_START();
@@ -259,7 +259,7 @@ void bli_dgemm_aaplmx_mac_16x16
             beta_c[i] = *beta;
 
     // As the BLIS API has no self-finalization,
-    //  AMX_START and AMX_END has to be included within
+    //  AMX_START and AMX_STOP has to be included within
     //  kernels. They do not seem to take much time,
     //  either.
     AMX_START();
