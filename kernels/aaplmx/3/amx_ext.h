@@ -79,3 +79,8 @@
   AMX_FMUL64_SEL( ((uint64_t)0x20 | COLIDX), 0, \
                   ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
 
+#define AMX_FMUL64_SELROW_REGALIGNED(ROWIDX, XREG, YREG, ZREGS) \
+  AMX_FMUL64_SEL( 0, ((uint64_t)0x20 | ROWIDX), \
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+

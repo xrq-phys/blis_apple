@@ -33,7 +33,7 @@
 */
 
 PACKM_KER_PROT( float,  s, packm_aaplmx_mac_32xk )
-// PACKM_KER_PROT( double, d, packm_aaplmx_mac_16xk )
+PACKM_KER_PROT( double, d, packm_aaplmx_mac_16xk )
 
 GEMM_UKR_PROT( float,  s, gemm_aaplmx_mac_32x32 )
 GEMM_UKR_PROT( double, d, gemm_aaplmx_mac_16x16 )

@@ -203,7 +203,7 @@ void bli_spackm_aaplmx_mac_32xk
             }
             for ( ; k >= 1; k -= 1 )
             {
-                // Plan C.
+                // Plain C.
                 if ( unitk )
                     for ( int i = 0; i < 32; ++i )
                         p[i] = *( a + inca * i );
