@@ -12,7 +12,7 @@
 
 // Const memory for zeroizing as
 //  zeroizing instruction is not found yet.
-const static uint8_t amx_zeros[64] = { 0 };
+const uint8_t amx_zeros[64] = { 0 };
 
 // BLIs Single-precision GEMM for Apple Matrix Coprocessor,
 //   implemented with MACros, of size 32 * 32.
