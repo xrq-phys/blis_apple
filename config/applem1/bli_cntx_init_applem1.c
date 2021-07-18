@@ -57,9 +57,9 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	// Set packing routines.
 	bli_cntx_set_packm_kers
 	(
-	  1, // 2,
+	  2,
 	  BLIS_PACKM_32XK_KER, BLIS_FLOAT,  bli_spackm_aaplmx_mac_32xk,
-	  // BLIS_PACKM_16XK_KER, BLIS_DOUBLE, bli_dpackm_aaplmx_mac_16xk,
+	  BLIS_PACKM_16XK_KER, BLIS_DOUBLE, bli_dpackm_aaplmx_mac_16xk,
 	  cntx
 	);
 
