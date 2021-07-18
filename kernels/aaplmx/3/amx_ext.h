@@ -41,7 +41,11 @@
 
 #define AMX_FMUL32_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
   AMX_FMUL32_SEL( ((uint64_t)0x20 | COLIDX), 0, \
-                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+#define AMX_FMUL32_SELROW_REGALIGNED(ROWIDX, XREG, YREG, ZREGS) \
+  AMX_FMUL32_SEL( 0, ((uint64_t)0x20 | ROWIDX), \
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
 
 #define AMX_FMA64_COMMON(PADROWS, PADCOLS, ZREGS) \
   AMX_FMA64( (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) )
@@ -73,5 +77,5 @@
 
 #define AMX_FMUL64_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
   AMX_FMUL64_SEL( ((uint64_t)0x20 | COLIDX), 0, \
-                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
 
