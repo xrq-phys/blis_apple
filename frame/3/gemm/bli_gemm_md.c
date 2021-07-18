@@ -425,7 +425,7 @@ mddm_t bli_gemm_md_rcc
 	func_t* cntx_funcs    = bli_cntx_packm_kers_buf( *cntx );
 	func_t* cntx_1m_funcs = bli_cntx_packm_kers_buf( cntx_1m );
 
-	for ( dim_t i = 0; i <= BLIS_PACKM_31XK_KER; ++i )
+	for ( dim_t i = 0; i < BLIS_NUM_PACKM_KERS; ++i )
 	{
 		cntx_funcs[ i ] = cntx_1m_funcs[ i ];
 	}
