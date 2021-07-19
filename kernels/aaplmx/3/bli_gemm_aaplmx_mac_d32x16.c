@@ -48,7 +48,7 @@ void bli_dgemm_aaplmx_mac_32x16
     */
 
     // TODO: Support generic strided storage.
-    assert( rs_c == 1 );
+    assert( rs_c == 1 || cs_c == 1 );
 
     // Duplicate alpha & beta.
     if ( alphac[0] != *alpha )
@@ -251,6 +251,50 @@ void bli_dgemm_aaplmx_mac_32x16
                 AMX_FMA64_SELCOL_REGALIGNED( i, 7, 1, 7 );
             }
         }
+        else if ( cs_c == 1 )
+        {
+            // Reload beta into X.
+            AMX_MEM( LDX, beta_c, 1 );
+
+            // Load blocks (0, 0) and (0, 1).
+            for ( int i = 0; i < 8; ++i ) {
+                AMX_MEM( LDY, c_ldr + i * rs_c + 0, 4 );
+                AMX_MEM( LDY, c_ldr + i * rs_c + 8, 5 );
+
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 0 );
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 4 );
+            }
+            c_ldr += 8 * rs_c;
+
+            // Load blocks (1, 0) and (1, 1).
+            for ( int i = 0; i < 8; ++i ) {
+                AMX_MEM( LDY, c_ldr + i * rs_c + 0, 4 );
+                AMX_MEM( LDY, c_ldr + i * rs_c + 8, 5 );
+
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 1 );
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 5 );
+            }
+            c_ldr += 8 * rs_c;
+
+            // Load blocks (2, 0) and (2, 1).
+            for ( int i = 0; i < 8; ++i ) {
+                AMX_MEM( LDY, c_ldr + i * rs_c + 0, 4 );
+                AMX_MEM( LDY, c_ldr + i * rs_c + 8, 5 );
+
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 2 );
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 6 );
+            }
+            c_ldr += 8 * rs_c;
+
+            // Load blocks (3, 0) and (3, 1).
+            for ( int i = 0; i < 8; ++i ) {
+                AMX_MEM( LDY, c_ldr + i * rs_c + 0, 4 );
+                AMX_MEM( LDY, c_ldr + i * rs_c + 8, 5 );
+
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 3 );
+                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 7 );
+            }
+        }
     }
 
     if ( rs_c == 1 )
@@ -270,6 +314,32 @@ void bli_dgemm_aaplmx_mac_32x16
             AMX_MEM( STZ, c + i * cs_c + 8 , i * 8 + 5 );
             AMX_MEM( STZ, c + i * cs_c + 16, i * 8 + 6 );
             AMX_MEM( STZ, c + i * cs_c + 24, i * 8 + 7 );
+        }
+    }
+    else if ( cs_c == 1 )
+    {
+        for ( int i = 0; i < 8; ++i ) {
+            // (0, 0) and (0, 1).
+            AMX_EXTRY64_REGALIGNED( i * 8 + 0, 0 );
+            AMX_EXTRY64_REGALIGNED( i * 8 + 4, 1 );
+            // (1, 0) and (1, 1).
+            AMX_EXTRY64_REGALIGNED( i * 8 + 1, 2 );
+            AMX_EXTRY64_REGALIGNED( i * 8 + 5, 3 );
+            // (2, 0) and (2, 1).
+            AMX_EXTRY64_REGALIGNED( i * 8 + 2, 4 );
+            AMX_EXTRY64_REGALIGNED( i * 8 + 6, 5 );
+            // (3, 0) and (3, 1).
+            AMX_EXTRY64_REGALIGNED( i * 8 + 3, 6 );
+            AMX_EXTRY64_REGALIGNED( i * 8 + 7, 7 );
+
+            AMX_MEM( STY, c + (i + 0 ) * rs_c + 0 , 0 );
+            AMX_MEM( STY, c + (i + 0 ) * rs_c + 8 , 1 );
+            AMX_MEM( STY, c + (i + 8 ) * rs_c + 0 , 2 );
+            AMX_MEM( STY, c + (i + 8 ) * rs_c + 8 , 3 );
+            AMX_MEM( STY, c + (i + 16) * rs_c + 0 , 4 );
+            AMX_MEM( STY, c + (i + 16) * rs_c + 8 , 5 );
+            AMX_MEM( STY, c + (i + 24) * rs_c + 0 , 6 );
+            AMX_MEM( STY, c + (i + 24) * rs_c + 8 , 7 );
         }
     }
 
