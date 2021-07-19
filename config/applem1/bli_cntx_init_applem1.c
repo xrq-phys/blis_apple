@@ -50,25 +50,26 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	(
 	  2,
 	  BLIS_GEMM_UKR, BLIS_FLOAT,    bli_sgemm_aaplmx_mac_32x32, FALSE,
-	  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_aaplmx_mac_16x16, FALSE,
+	  BLIS_GEMM_UKR, BLIS_DOUBLE,   bli_dgemm_aaplmx_mac_32x16, FALSE,
 	  cntx
 	);
 
 	// Set packing routines.
 	bli_cntx_set_packm_kers
 	(
-	  2,
+	  3,
 	  BLIS_PACKM_32XK_KER, BLIS_FLOAT,  bli_spackm_aaplmx_mac_32xk,
 	  BLIS_PACKM_16XK_KER, BLIS_DOUBLE, bli_dpackm_aaplmx_mac_16xk,
+	  BLIS_PACKM_32XK_KER, BLIS_DOUBLE, bli_dpackm_aaplmx_mac_32xk,
 	  cntx
 	);
 
 	// Initialize level-3 blocksize objects with architecture-specific values.
 	//                                           s      d      c      z
-	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    32,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    16,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   512,   256,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  3072,  2048,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2048,  2048,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ], 16384,  8192,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache
