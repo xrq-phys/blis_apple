@@ -33,21 +33,21 @@
 */
 
 #ifdef SUP_ALWAYS_PACK_A
-#define SUP_SET_PACK() \
+#define SUP_SET_PACK( OBJA, OBJB, RNTM ) \
 { \
 	/* Due to kernel's inability to handle generic strides,
 	 *  sup ensures packing of A in ?rr/?cc cases.
 	 */ \
-	bool a_is_colmaj = bli_obj_row_stride( a ) == 1; \
-	bool b_is_rowmaj = bli_obj_col_stride( b ) == 1; \
-	if ( bli_obj_has_trans( a ) ) a_is_colmaj = !a_is_colmaj; \
-	if ( bli_obj_has_trans( b ) ) b_is_rowmaj = !b_is_rowmaj; \
+	bool a_is_colmaj = bli_obj_row_stride( OBJA ) == 1; \
+	bool b_is_rowmaj = bli_obj_col_stride( OBJB ) == 1; \
+	if ( bli_obj_has_trans( OBJA ) ) a_is_colmaj = !a_is_colmaj; \
+	if ( bli_obj_has_trans( OBJB ) ) b_is_rowmaj = !b_is_rowmaj; \
 \
-	if (  a_is_colmaj && !b_is_rowmaj ) bli_rntm_set_pack_b( true, rntm ); /* ?CC. */ \
-	if ( !a_is_colmaj &&  b_is_rowmaj ) bli_rntm_set_pack_a( true, rntm ); /* ?RR. */ \
+	if (  a_is_colmaj && !b_is_rowmaj ) bli_rntm_set_pack_b( true, RNTM ); /* ?CC. */ \
+	if ( !a_is_colmaj &&  b_is_rowmaj ) bli_rntm_set_pack_a( true, RNTM ); /* ?RR. */ \
 }
 #else
-#define SUP_SET_PACK()
+#define SUP_SET_PACK( OBJA, OBJB, RNTM )
 #endif
 
 
@@ -68,8 +68,6 @@ err_t bli_gemmsup
 	#ifdef BLIS_DISABLE_SUP_HANDLING
 	return BLIS_FAILURE;
 	#endif
-
-	SUP_SET_PACK();
 
 	// Return early if this is a mixed-datatype computation.
 	if ( bli_obj_dt( c ) != bli_obj_dt( a ) ||
@@ -112,6 +110,8 @@ err_t bli_gemmsup
 	rntm_t rntm_l;
 	if ( rntm == NULL ) { bli_rntm_init_from_global( &rntm_l ); rntm = &rntm_l; }
 	else                { rntm_l = *rntm;                       rntm = &rntm_l; }
+
+	SUP_SET_PACK( a, b, rntm );
 
 #if 0
 const num_t dt = bli_obj_dt( c );
@@ -169,8 +169,6 @@ err_t bli_gemmtsup
 	return BLIS_FAILURE;
 	#endif
 
-	SUP_SET_PACK();
-
 	// Return early if this is a mixed-datatype computation.
 	if ( bli_obj_dt( c ) != bli_obj_dt( a ) ||
 	     bli_obj_dt( c ) != bli_obj_dt( b ) ||
@@ -199,6 +197,8 @@ err_t bli_gemmtsup
 	rntm_t rntm_l;
 	if ( rntm == NULL ) { bli_rntm_init_from_global( &rntm_l ); rntm = &rntm_l; }
 	else                { rntm_l = *rntm;                       rntm = &rntm_l; }
+
+	SUP_SET_PACK( a, b, rntm );
 
 	// We've now ruled out the possibility that the sup thresholds are
 	// unsatisfied.
