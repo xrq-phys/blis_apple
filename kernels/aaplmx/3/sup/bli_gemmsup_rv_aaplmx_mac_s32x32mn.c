@@ -42,12 +42,17 @@ void bli_sgemmsup_rv_aaplmx_mac_32x32mn
     dim_t  m      = m0;
     dim_t  n;
     dim_t  k;
+    float* a_rows = a0;
     float* a;
     float* b_cols;
     float* b;
     float* c_rows = c0;
     float* c_cols;
     float* c;
+
+    // Fix ignored panel strides for the short dims.
+    if ( !ps_a || m0 <= 32 ) ps_a = 32;
+    if ( !ps_b || n0 <= 32 ) ps_b = 32;
 
     // Isotropic kernel.
     if ( cs_c == 1 && rs_c != 1 )
@@ -107,7 +112,7 @@ void bli_sgemmsup_rv_aaplmx_mac_32x32mn
         for ( ; n >= 32; n -= 32 )
         {
             k = k0;
-            a = a0;
+            a = a_rows;
             b = b_cols;
             c = c_cols;
 
@@ -257,28 +262,49 @@ void bli_sgemmsup_rv_aaplmx_mac_32x32mn
                 (
                   conja, conjb,
                   32, n, k0, alpha,
-                  a0, rs_a, cs_a,
+                  a_rows, rs_a, cs_a,
                   b_cols, rs_b, cs_b, beta,
                   c_cols, rs_c, cs_c,
                   data, cntx
                 );
         }
 
-        a0 += ps_a; // 32 * rs_a;
+        a_rows += ps_a; // 32 * rs_a;
         c_rows += 32 * rs_c;
     }
 
     if ( m > 0 )
     {
-        bli_sgemmsup_r_aaplmx_ref2
-            (
-              conja, conjb,
-              m, n0, k0, alpha,
-              a0, rs_a, cs_a,
-              b0, rs_b, cs_b, beta,
-              c_rows, rs_c, cs_c,
-              data, cntx
-            );
+        n = n0;
+        b_cols = b0;
+        c_cols = c_rows;
+
+        for ( ; n >= 32; n -= 32 )
+        {
+            bli_sgemmsup_r_aaplmx_ref2
+                (
+                  conja, conjb,
+                  m, 32, k0, alpha,
+                  a_rows, rs_a, cs_a,
+                  b_cols, rs_b, cs_b, beta,
+                  c_cols, rs_c, cs_c,
+                  data, cntx
+                );
+
+            b_cols += ps_b;
+            c_cols += 32 * cs_c;
+        }
+
+        if ( n > 0 )
+            bli_sgemmsup_r_aaplmx_ref2
+                (
+                  conja, conjb,
+                  m, n, k0, alpha,
+                  a_rows, rs_a, cs_a,
+                  b_cols, rs_b, cs_b, beta,
+                  c_cols, rs_c, cs_c,
+                  data, cntx
+                );
     }
 
     AMX_STOP();
