@@ -46,7 +46,7 @@ THIS_CONFIG    := applem1
 # general-purpose/configuration-agnostic flags in common.mk. You
 # may specify additional flags here as needed.
 CPPROCFLAGS    := -D_GNU_SOURCE
-CMISCFLAGS     := -DSUP_ALWAYS_PACK_A
+CMISCFLAGS     := -DSUP_ALWAYS_PACK_A -DGEMMSUP_ALLOW_UNSAFE_MEMORY_ACCESS
 CPICFLAGS      :=
 CWARNFLAGS     :=
 
