@@ -40,3 +40,6 @@ GEMM_UKR_PROT( float,  s, gemm_aaplmx_mac_32x32 )
 GEMM_UKR_PROT( double, d, gemm_aaplmx_mac_16x16 )
 GEMM_UKR_PROT( double, d, gemm_aaplmx_mac_32x16 )
 
+GEMMSUP_KER_PROT( float,  s, gemmsup_rv_aaplmx_mac_32x32mn )
+// GEMMSUP_KER_PROT( double, d, gemmsup_rv_aaplmx_mac_16x16mn )
+

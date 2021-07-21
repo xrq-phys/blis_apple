@@ -32,6 +32,25 @@
 
 */
 
+#ifdef SUP_ALWAYS_PACK_A
+#define SUP_SET_PACK() \
+{ \
+	/* Due to kernel's inability to handle generic strides,
+	 *  sup ensures packing of A in ?rr/?cc cases.
+	 */ \
+	bool a_is_colmaj = bli_obj_row_stride( a ) == 1; \
+	bool b_is_rowmaj = bli_obj_col_stride( b ) == 1; \
+	if ( bli_obj_has_trans( a ) ) a_is_colmaj = !a_is_colmaj; \
+	if ( bli_obj_has_trans( b ) ) b_is_rowmaj = !b_is_rowmaj; \
+\
+	if (  a_is_colmaj && !b_is_rowmaj ) bli_rntm_set_pack_b( true, rntm ); /* ?CC. */ \
+	if ( !a_is_colmaj &&  b_is_rowmaj ) bli_rntm_set_pack_a( true, rntm ); /* ?RR. */ \
+}
+#else
+#define SUP_SET_PACK()
+#endif
+
+
 #include "blis.h"
 
 err_t bli_gemmsup
@@ -49,6 +68,8 @@ err_t bli_gemmsup
 	#ifdef BLIS_DISABLE_SUP_HANDLING
 	return BLIS_FAILURE;
 	#endif
+
+	SUP_SET_PACK();
 
 	// Return early if this is a mixed-datatype computation.
 	if ( bli_obj_dt( c ) != bli_obj_dt( a ) ||
@@ -147,6 +168,8 @@ err_t bli_gemmtsup
 	#ifdef BLIS_DISABLE_SUP_HANDLING
 	return BLIS_FAILURE;
 	#endif
+
+	SUP_SET_PACK();
 
 	// Return early if this is a mixed-datatype computation.
 	if ( bli_obj_dt( c ) != bli_obj_dt( a ) ||
