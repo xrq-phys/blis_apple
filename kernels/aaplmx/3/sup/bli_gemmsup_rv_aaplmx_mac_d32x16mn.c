@@ -24,10 +24,18 @@ extern const uint8_t amx_zeros[64];
 static double alphac[8] = { 0 };
 static double beta_c[8] = { 0 };
 
-
 // Prototype reference and supplementary microkernels.
 GEMMSUP_KER_PROT( double, d, gemmsup_r_aaplmx_ref2 )
-// GEMMSUP_KER_PROT( double, d, gemmsup_ccr_aaplmx_mac_inner_16xn )
+GEMMSUP_KER_PROT( double, d, gemmsup_ccr_aaplmx_mac_inner_16xn )
+
+// Edge-size microkernel. Safe or unsafe.
+#ifdef GEMMSUP_ALLOW_UNSAFE_MEMORY_ACCESS
+#warning "GEMMSUP is allowed to perform excess read (not write)."
+const static dgemmsup_ker_ft edge_mker = bli_dgemmsup_ccr_aaplmx_mac_inner_16xn;
+#else
+const static dgemmsup_ker_ft edge_mker = bli_dgemmsup_r_aaplmx_ref2;
+#endif
+
 
 
 void bli_dgemmsup_rv_aaplmx_mac_32x16mn
@@ -86,14 +94,6 @@ void bli_dgemmsup_rv_aaplmx_mac_32x16mn
               &datat, cntx
             );
     }
-
-    // Edge-size microkernel. Safe or unsafe.
-// #ifdef GEMMSUP_ALLOW_UNSAFE_MEMORY_ACCESS
-// #warning "GEMMSUP is allowed to perform excess read (not write)."
-//     const dgemmsup_ker_ft edge_mker = bli_dgemmsup_ccr_aaplmx_mac_inner_16xn;
-// #else
-    const dgemmsup_ker_ft edge_mker = bli_dgemmsup_r_aaplmx_ref2;
-// #endif
 
     // In-reg transpose is worse than millikernel transpose above.
     assert( rs_c == 1 );
@@ -474,14 +474,6 @@ void bli_dgemmsup_rv_aaplmx_mac_16x32mn
             );
     }
 
-    // Edge-size microkernel. Safe or unsafe.
-// #ifdef GEMMSUP_ALLOW_UNSAFE_MEMORY_ACCESS
-// #warning "GEMMSUP is allowed to perform excess read (not write)."
-//     const dgemmsup_ker_ft edge_mker = bli_dgemmsup_ccr_aaplmx_mac_inner_16xn;
-// #else
-    const dgemmsup_ker_ft edge_mker = bli_dgemmsup_r_aaplmx_ref2;
-// #endif
-
     // In-reg transpose is worse than millikernel transpose above.
     assert( rs_c == 1 );
 
@@ -832,5 +824,228 @@ void bli_dgemmsup_rv_aaplmx_mac_16x32mn
     }
 
     AMX_STOP();
+}
+
+void bli_dgemmsup_ccr_aaplmx_mac_inner_16xn
+     (
+       conj_t              conja,
+       conj_t              conjb,
+       dim_t               m,
+       dim_t               n,
+       dim_t               k,
+       double*    restrict alpha,
+       double*    restrict a, inc_t rs_a, inc_t cs_a,
+       double*    restrict b, inc_t rs_b, inc_t cs_b,
+       double*    restrict beta,
+       double*    restrict c, inc_t rs_c, inc_t cs_c,
+       auxinfo_t* restrict data,
+       cntx_t*    restrict cntx
+     )
+{
+    // This microkernel is supposed to be called between
+    //  an AMX_START() and AMX_STOP() block.
+
+    assert( rs_c == 1 && rs_a == 1 && cs_b == 1 );
+    assert( m <= 16 && n <= 16 );
+
+    // Scratchpad for safe storage.
+    static double c_scr[64];
+
+    // Duplicate alpha & beta.
+    if ( alphac[0] != *alpha )
+        for ( int i = 0; i < 8; ++i )
+            alphac[i] = *alpha;
+
+    if ( beta_c[0] != *beta )
+        for ( int i = 0; i < 8; ++i )
+            beta_c[i] = *beta;
+
+    // Zeroize Z.
+    AMX_MEM( LDY, amx_zeros, 0 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 0 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 1 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 2 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 3 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 4 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 5 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 6 );
+    AMX_FMUL64_COMMON_REGALIGNED( 0, 0, 7 );
+
+#pragma nounroll
+    for ( ; k >= 4; k -= 4 )
+    {
+        AMX_MEM( LDX, a + cs_a * 0 + 0, 0 ); // A column 0.
+        AMX_MEM( LDX, a + cs_a * 1 + 0, 2 ); // A column 1.
+        AMX_MEM( LDX, a + cs_a * 2 + 0, 4 ); // A column 2.
+        AMX_MEM( LDX, a + cs_a * 3 + 0, 6 ); // A column 3.
+        if ( m > 8 )
+        {
+            AMX_MEM( LDX, a + cs_a * 0 + 8, 1 );
+            AMX_MEM( LDX, a + cs_a * 1 + 8, 3 );
+            AMX_MEM( LDX, a + cs_a * 2 + 8, 5 );
+            AMX_MEM( LDX, a + cs_a * 3 + 8, 7 );
+        }
+
+        AMX_MEM( LDY, b + rs_b * 0 + 0, 0 ); // B row 0.
+        AMX_MEM( LDY, b + rs_b * 1 + 0, 2 ); // B row 1.
+        AMX_MEM( LDY, b + rs_b * 2 + 0, 4 ); // B row 2.
+        AMX_MEM( LDY, b + rs_b * 3 + 0, 6 ); // B row 3.
+        if ( n > 8 )
+        {
+            AMX_MEM( LDY, b + rs_b * 0 + 8, 1 );
+            AMX_MEM( LDY, b + rs_b * 1 + 8, 3 );
+            AMX_MEM( LDY, b + rs_b * 2 + 8, 5 );
+            AMX_MEM( LDY, b + rs_b * 3 + 8, 7 );
+        }
+
+        AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 ); // Block (0, 0)
+        AMX_FMA64_COMMON_REGALIGNED( 2, 2, 0 );
+        AMX_FMA64_COMMON_REGALIGNED( 4, 4, 0 );
+        AMX_FMA64_COMMON_REGALIGNED( 6, 6, 0 );
+        if ( m > 8 )
+        {
+            AMX_FMA64_COMMON_REGALIGNED( 1, 0, 1 ); // Block (1, 0)
+            AMX_FMA64_COMMON_REGALIGNED( 3, 2, 1 );
+            AMX_FMA64_COMMON_REGALIGNED( 5, 4, 1 );
+            AMX_FMA64_COMMON_REGALIGNED( 7, 6, 1 );
+        }
+
+        if ( n > 8 )
+        {
+            AMX_FMA64_COMMON_REGALIGNED( 0, 1, 2 ); // Block (0, 1)
+            AMX_FMA64_COMMON_REGALIGNED( 2, 3, 2 );
+            AMX_FMA64_COMMON_REGALIGNED( 4, 5, 2 );
+            AMX_FMA64_COMMON_REGALIGNED( 6, 7, 2 );
+
+            if ( m > 8 )
+            {
+                AMX_FMA64_COMMON_REGALIGNED( 1, 1, 3 ); // Block (1, 1)
+                AMX_FMA64_COMMON_REGALIGNED( 3, 3, 3 );
+                AMX_FMA64_COMMON_REGALIGNED( 5, 5, 3 );
+                AMX_FMA64_COMMON_REGALIGNED( 7, 7, 3 );
+            }
+        }
+
+        // Address forward.
+        a += 4 * cs_a;
+        b += 4 * rs_b;
+    }
+#pragma nounroll
+    for ( ; k >= 1; k -= 1 )
+    {
+        AMX_MEM( LDX, a + 0, 0 );
+        if ( m > 8 )
+            AMX_MEM( LDX, a + 8, 1 );
+
+        AMX_MEM( LDY, b + 0, 0 );
+        if ( n > 8 )
+            AMX_MEM( LDY, b + 8, 1 );
+
+        AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 );
+        if ( m > 8 )
+            AMX_FMA64_COMMON_REGALIGNED( 1, 0, 1 );
+        if ( n > 8 )
+        {
+            AMX_FMA64_COMMON_REGALIGNED( 0, 1, 2 );
+            if ( m > 8 )
+                AMX_FMA64_COMMON_REGALIGNED( 1, 1, 3 );
+        }
+
+        a += cs_a;
+        b += rs_b;
+    }
+    // Load alpha & beta.
+    AMX_MEM( LDY, alphac, 0 );
+    AMX_MEM( LDY, beta_c, 1 );
+
+    // Multiply by alpha.
+    if ( *alpha != 1.0 )
+        for ( int i = 0; i < 8; ++i ) {
+            AMX_EXTRX_REGALIGNED( i * 8 + 0, 4 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 1, 5 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 2, 6 );
+            AMX_EXTRX_REGALIGNED( i * 8 + 3, 7 );
+
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 4, 0, 0 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 5, 0, 1 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 6, 0, 2 );
+            AMX_FMUL64_SELCOL_REGALIGNED( i, 7, 0, 3 );
+        }
+
+    // Load and multiply by beta.
+    // Write into Z registers.
+    if ( *beta != 0.0 )
+    {
+        double *c_ldr = c;
+        if ( rs_c == 1 )
+        {
+            // Load blocks (0, 0) and (1, 0).
+            for ( int i = 0; i < MIN( n, 8 ); ++i )
+            {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 3 );
+
+                AMX_FMA64_SELCOL_REGALIGNED( i, 2, 1, 0 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 3, 1, 1 );
+            }
+            c_ldr += 8 * cs_c;
+
+            // Load blocks (0, 1) and (1, 1).
+            for ( int i = 0; i + 8 < n; ++i )
+            {
+                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 2 );
+                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 3 );
+
+                AMX_FMA64_SELCOL_REGALIGNED( i, 2, 1, 2 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 3, 1, 3 );
+            }
+        }
+    }
+
+    if ( rs_c == 1 )
+    {
+        // Store blocks (0, 0) and (1, 0).
+        for ( int i = 0; i < MIN( n, 8 ); ++i )
+        {
+            if ( m >= 8 )
+                AMX_MEM( STZ, c + i * cs_c + 0, i * 8 + 0 );
+            else
+            {
+                AMX_MEM( STZ, c_scr + i * 8, i * 8 + 0 );
+                memcpy( c + i * cs_c + 0, c_scr + i * 8, m * sizeof(double) );
+                continue;
+            }
+
+            if ( m == 16 )
+                AMX_MEM( STZ, c + i * cs_c + 8, i * 8 + 1 );
+            else
+            {
+                AMX_MEM( STZ, c_scr + i * 8, i * 8 + 1 );
+                memcpy( c + i * cs_c + 8, c_scr + i * 8, (m - 8) * sizeof(double) );
+            }
+        }
+        c += 8 * cs_c;
+
+        // Store blocks (0, 1) and (1, 1).
+        for ( int i = 0; i + 8 < n; ++i )
+        {
+            if ( m >= 8 )
+                AMX_MEM( STZ, c + i * cs_c + 0, i * 8 + 2 );
+            else
+            {
+                AMX_MEM( STZ, c_scr + i * 8, i * 8 + 2 );
+                memcpy( c + i * cs_c + 0, c_scr + i * 8, m * sizeof(double) );
+                continue;
+            }
+
+            if ( m == 16 )
+                AMX_MEM( STZ, c + i * cs_c + 8, i * 8 + 3 );
+            else
+            {
+                AMX_MEM( STZ, c_scr + i * 8, i * 8 + 3 );
+                memcpy( c + i * cs_c + 8, c_scr + i * 8, (m - 8) * sizeof(double) );
+            }
+        }
+    }
 }
 

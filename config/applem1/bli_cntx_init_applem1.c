@@ -69,8 +69,8 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	//                                           s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    32,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    16,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   512,   256,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2048,  2048,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   384,   256,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2016,  2048,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ], 16384,  8192,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache
@@ -90,9 +90,9 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 
 	// Initialize sup thresholds with architecture-appropriate values.
 	//                                          s     d     c     z
-	bli_blksz_init_easy( &thresh[ BLIS_MT ],  201,   -1,   -1,   -1 );
-	bli_blksz_init_easy( &thresh[ BLIS_NT ],  201,   -1,   -1,   -1 );
-	bli_blksz_init_easy( &thresh[ BLIS_KT ],  201,   -1,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_MT ],  601,  601,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_NT ],  601,  601,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_KT ],  601,  601,   -1,   -1 );
 
 	// Initialize the context with the sup thresholds.
 	bli_cntx_set_l3_sup_thresh
@@ -107,26 +107,32 @@ void bli_cntx_init_applem1( cntx_t* cntx )
 	// Update the context with optimized small/unpacked gemm kernels.
 	bli_cntx_set_l3_sup_kers
 	(
-	  6,
-	  // BLIS_RRC, BLIS_FLOAT, bli_dgemmsup_rd_armv8a_asm_6x8m, TRUE,
-	  // BLIS_CRC, BLIS_FLOAT, bli_dgemmsup_rd_armv8a_asm_6x8n, TRUE,
+	  12,
 	  BLIS_RRR, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
 	  BLIS_RCR, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
 	  BLIS_RCC, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
 	  BLIS_CRR, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
 	  BLIS_CCR, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
 	  BLIS_CCC, BLIS_FLOAT, bli_sgemmsup_rv_aaplmx_mac_32x32mn, TRUE,
+	  // BLIS_RRC, BLIS_DOUBLE, bli_dgemmsup_rd_armv8a_asm_6x8m, TRUE,
+	  // BLIS_CRC, BLIS_DOUBLE, bli_dgemmsup_rd_armv8a_asm_6x8n, TRUE,
+	  BLIS_RRR, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
+	  BLIS_RCR, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
+	  BLIS_RCC, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
+	  BLIS_CRR, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
+	  BLIS_CCR, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
+	  BLIS_CCC, BLIS_DOUBLE, bli_dgemmsup_rv_aaplmx_mac_16x32mn, TRUE,
 	  cntx
 	);
 
 	// Initialize level-3 sup blocksize objects with architecture-specific
 	// values.
 	//                                           s      d      c      z
-	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    -1,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    -1,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   512,    -1,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  1024,    -1,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  4096,    -1,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    32,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],  1024,   640,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2016,  2016,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  4096,  4096,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache
 	// blocksizes for small/unpacked level-3 problems.
