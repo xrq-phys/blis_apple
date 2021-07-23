@@ -274,43 +274,67 @@ void bli_dgemm_aaplmx_mac_16x16
 #pragma nounroll
     for ( ; k >= 4; k -= 4 )
     {
-        AMX_MEM( LDX, a + 16 * 0 + 0, 0 ); // A column 0.
+        // NOTE: Comments on this nanokernel is written in a column-major fasion:
+        //
+        // An AMX_FMA multiplies vector column x and vector row y^T into a matrix
+        //  formed by vector columns of z:
+        //
+        // e.g.
+        //   AMX_FMA64_COMMON_REGALIGNED( i, j, l ); where 0<=i,j<8, 0<=l<8
+        //  takes the i-th vector from 8 registers for x (x_i),
+        //  j-th vector from 8 registers for y (y_j) and performs:
+        //   z_{8 * 0 + l} += x_i * y_i[0];
+        //   z_{8 * 1 + l} += x_i * y_i[1];
+        //   z_{8 * 2 + l} += x_i * y_i[2];
+        //   z_{8 * 3 + l} += x_i * y_i[3];
+        //   z_{8 * 4 + l} += x_i * y_i[4];
+        //   z_{8 * 5 + l} += x_i * y_i[5];
+        //   z_{8 * 6 + l} += x_i * y_i[6];
+        //   z_{8 * 7 + l} += x_i * y_i[7];
+        //  within 1 clock cycle.
+        //
+        // ---
+        // Notation:
+        //  v_i or v_{i}: the i-th register in the register file for v;
+        //  v[k]: element k in some vector.
+
+        AMX_MEM( LDX, a + 16 * 0 + 0, 0 ); // Load A column 0.
         AMX_MEM( LDX, a + 16 * 0 + 8, 1 );
-        AMX_MEM( LDX, a + 16 * 1 + 0, 2 ); // A column 1.
+        AMX_MEM( LDX, a + 16 * 1 + 0, 2 ); // Load A column 1.
         AMX_MEM( LDX, a + 16 * 1 + 8, 3 );
-        AMX_MEM( LDX, a + 16 * 2 + 0, 4 ); // A column 2.
+        AMX_MEM( LDX, a + 16 * 2 + 0, 4 ); // Load A column 2.
         AMX_MEM( LDX, a + 16 * 2 + 8, 5 );
-        AMX_MEM( LDX, a + 16 * 3 + 0, 6 ); // A column 3.
+        AMX_MEM( LDX, a + 16 * 3 + 0, 6 ); // Load A column 3.
         AMX_MEM( LDX, a + 16 * 3 + 8, 7 );
 
-        AMX_MEM( LDY, b + 16 * 0 + 0, 0 ); // B row 0.
+        AMX_MEM( LDY, b + 16 * 0 + 0, 0 ); // Load B row 0.
         AMX_MEM( LDY, b + 16 * 0 + 8, 1 );
-        AMX_MEM( LDY, b + 16 * 1 + 0, 2 ); // B row 1.
+        AMX_MEM( LDY, b + 16 * 1 + 0, 2 ); // Load B row 1.
         AMX_MEM( LDY, b + 16 * 1 + 8, 3 );
-        AMX_MEM( LDY, b + 16 * 2 + 0, 4 ); // B row 2.
+        AMX_MEM( LDY, b + 16 * 2 + 0, 4 ); // Load B row 2.
         AMX_MEM( LDY, b + 16 * 2 + 8, 5 );
-        AMX_MEM( LDY, b + 16 * 3 + 0, 6 ); // B row 3.
+        AMX_MEM( LDY, b + 16 * 3 + 0, 6 ); // Load B row 3.
         AMX_MEM( LDY, b + 16 * 3 + 8, 7 );
 
-        AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 ); // Block (0, 0)
-        AMX_FMA64_COMMON_REGALIGNED( 1, 0, 1 ); // Block (1, 0)
-        AMX_FMA64_COMMON_REGALIGNED( 0, 1, 2 ); // Block (0, 1)
-        AMX_FMA64_COMMON_REGALIGNED( 1, 1, 3 ); // Block (1, 1)
+        AMX_FMA64_COMMON_REGALIGNED( 0, 0, 0 ); // C[ 0:15, 0:15] += A[ 0:15, 0] * B[ 0:15, 0]
+        AMX_FMA64_COMMON_REGALIGNED( 1, 0, 1 ); // C[16:31, 0:15] += A[16:31, 0] * B[ 0:15, 0]
+        AMX_FMA64_COMMON_REGALIGNED( 0, 1, 2 ); // C[ 0:15,16:31] += A[ 0:15, 0] * B[16:31, 0]
+        AMX_FMA64_COMMON_REGALIGNED( 1, 1, 3 ); // C[16:31,16:31] += A[16:31, 0] * B[16:31, 0]
 
-        AMX_FMA64_COMMON_REGALIGNED( 2, 2, 0 );
-        AMX_FMA64_COMMON_REGALIGNED( 3, 2, 1 );
-        AMX_FMA64_COMMON_REGALIGNED( 2, 3, 2 );
-        AMX_FMA64_COMMON_REGALIGNED( 3, 3, 3 );
+        AMX_FMA64_COMMON_REGALIGNED( 2, 2, 0 ); // C[ 0:15, 0:15] += A[ 0:15, 1] * B[ 0:15, 1]
+        AMX_FMA64_COMMON_REGALIGNED( 3, 2, 1 ); // C[16:31, 0:15] += A[16:31, 1] * B[ 0:15, 1]
+        AMX_FMA64_COMMON_REGALIGNED( 2, 3, 2 ); // C[ 0:15,16:31] += A[ 0:15, 1] * B[16:31, 1]
+        AMX_FMA64_COMMON_REGALIGNED( 3, 3, 3 ); // C[16:31,16:31] += A[16:31, 1] * B[16:31, 1]
 
-        AMX_FMA64_COMMON_REGALIGNED( 4, 4, 0 );
-        AMX_FMA64_COMMON_REGALIGNED( 5, 4, 1 );
-        AMX_FMA64_COMMON_REGALIGNED( 4, 5, 2 );
-        AMX_FMA64_COMMON_REGALIGNED( 5, 5, 3 );
+        AMX_FMA64_COMMON_REGALIGNED( 4, 4, 0 ); // C[ 0:15, 0:15] += A[ 0:15, 2] * B[ 0:15, 2]
+        AMX_FMA64_COMMON_REGALIGNED( 5, 4, 1 ); // C[16:31, 0:15] += A[16:31, 2] * B[ 0:15, 2]
+        AMX_FMA64_COMMON_REGALIGNED( 4, 5, 2 ); // C[ 0:15,16:31] += A[ 0:15, 2] * B[16:31, 2]
+        AMX_FMA64_COMMON_REGALIGNED( 5, 5, 3 ); // C[16:31,16:31] += A[16:31, 2] * B[16:31, 2]
 
-        AMX_FMA64_COMMON_REGALIGNED( 6, 6, 0 );
-        AMX_FMA64_COMMON_REGALIGNED( 7, 6, 1 );
-        AMX_FMA64_COMMON_REGALIGNED( 6, 7, 2 );
-        AMX_FMA64_COMMON_REGALIGNED( 7, 7, 3 );
+        AMX_FMA64_COMMON_REGALIGNED( 6, 6, 0 ); // C[ 0:15, 0:15] += A[ 0:15, 3] * B[ 0:15, 3]
+        AMX_FMA64_COMMON_REGALIGNED( 7, 6, 1 ); // C[16:31, 0:15] += A[16:31, 3] * B[ 0:15, 3]
+        AMX_FMA64_COMMON_REGALIGNED( 6, 7, 2 ); // C[ 0:15,16:31] += A[ 0:15, 3] * B[16:31, 3]
+        AMX_FMA64_COMMON_REGALIGNED( 7, 7, 3 ); // C[16:31,16:31] += A[16:31, 3] * B[16:31, 3]
 
         // Address forward.
         a += 4 * 16;
