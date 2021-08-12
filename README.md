@@ -6,7 +6,7 @@ As of Jul., 2021, the coprocessor is undocumented but not protected either. (Any
 
 Known issues:
 - Generic-strided is not supported by our microkernels for the destination matrix. Program would `assert(false)` upon encountering such a situation.
-- TRSM might fail. Try commenting out function call to `bli_cntx_set_packm_kers` in `config/applem1/bli_cntx_init_applem1.c` if your need TRSM to work.
+- TRSM might fail. Try commenting out function call to `bli_cntx_set_packm_kers` in `config/aaplmx/bli_cntx_init_aaplmx.c` if your need TRSM to work.
 - Performance is around 75% the hardware peak. This is worse than the Accelerate framework on small size matrices while better on large size one.
-  ![](docs/graphs/applem1/output_st_dgemm_asm_blis.png)
+  ![](docs/graphs/aaplmx/output_st_dgemm_asm_blis.png)
 
