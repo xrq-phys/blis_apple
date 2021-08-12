@@ -179,8 +179,8 @@ void bli_arch_set_id( void )
 		#ifdef BLIS_FAMILY_A64FX
 		id = BLIS_ARCH_A64FX;
 		#endif
-		#ifdef BLIS_FAMILY_APPLEM1
-		id = BLIS_ARCH_APPLEM1;
+		#ifdef BLIS_FAMILY_AAPLMX
+		id = BLIS_ARCH_AAPLMX;
 		#endif
 		#ifdef BLIS_FAMILY_THUNDERX2
 		id = BLIS_ARCH_THUNDERX2;

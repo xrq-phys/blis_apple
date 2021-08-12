@@ -35,7 +35,7 @@
 
 # Declare the name of the current configuration and add it to the
 # running list of configurations included by common.mk.
-THIS_CONFIG    := applem1
+THIS_CONFIG    := aaplmx
 #CONFIGS_INCL   += $(THIS_CONFIG)
 
 #

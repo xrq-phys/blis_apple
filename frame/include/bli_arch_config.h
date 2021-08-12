@@ -89,8 +89,8 @@ CNTX_INIT_PROTS( armsve )
 #ifdef BLIS_CONFIG_A64FX
 CNTX_INIT_PROTS( a64fx )
 #endif
-#ifdef BLIS_CONFIG_APPLEM1
-CNTX_INIT_PROTS( applem1 )
+#ifdef BLIS_CONFIG_AAPLMX
+CNTX_INIT_PROTS( aaplmx )
 #endif
 #ifdef BLIS_CONFIG_THUNDERX2
 CNTX_INIT_PROTS( thunderx2 )
@@ -198,8 +198,8 @@ CNTX_INIT_PROTS( generic )
 #ifdef BLIS_FAMILY_A64FX
 #include "bli_family_a64fx.h"
 #endif
-#ifdef BLIS_FAMILY_APPLEM1
-#include "bli_family_applem1.h"
+#ifdef BLIS_FAMILY_AAPLMX
+#include "bli_family_aaplmx.h"
 #endif
 #ifdef BLIS_FAMILY_THUNDERX2
 #include "bli_family_thunderx2.h"

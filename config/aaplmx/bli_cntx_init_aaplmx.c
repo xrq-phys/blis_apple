@@ -34,13 +34,13 @@
 
 #include "blis.h"
 
-void bli_cntx_init_applem1( cntx_t* cntx )
+void bli_cntx_init_aaplmx( cntx_t* cntx )
 {
 	blksz_t blkszs[ BLIS_NUM_BLKSZS ];
 	blksz_t thresh[ BLIS_NUM_THRESH ];
 
 	// Set default kernel blocksizes and functions.
-	bli_cntx_init_applem1_ref( cntx );
+	bli_cntx_init_aaplmx_ref( cntx );
 
 	// -------------------------------------------------------------------------
 
