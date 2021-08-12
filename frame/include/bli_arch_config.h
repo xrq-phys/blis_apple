@@ -198,7 +198,7 @@ CNTX_INIT_PROTS( generic )
 #ifdef BLIS_FAMILY_A64FX
 #include "bli_family_a64fx.h"
 #endif
-#ifdef BLIS_KERNELS_APPLEM1
+#ifdef BLIS_FAMILY_APPLEM1
 #include "bli_family_applem1.h"
 #endif
 #ifdef BLIS_FAMILY_THUNDERX2
