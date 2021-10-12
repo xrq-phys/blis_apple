@@ -109,6 +109,29 @@
 #define AMX_FMUL16_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
   AMX_FMUL16_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
 
+#define AMX_FMA16_SEL(SELCOLS, SELROWS, PADROWS, PADCOLS, ZREGS) \
+  AMX_FMA16(  (uint64_t)(PADCOLS) \
+           | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS) << 20) \
+           | ((uint64_t)(SELCOLS) << 32) | ((uint64_t)(SELROWS) << 41) )
+
+#define AMX_FMA16_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
+  AMX_FMA16_SEL( ((uint64_t)0x20 | COLIDX), 0, \
+                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+#define AMX_FMUL16_SEL(SELCOLS, SELROWS, PADROWS, PADCOLS, ZREGS) \
+  AMX_FMA16(  (uint64_t)(PADCOLS) \
+           | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS) << 20) \
+           | ((uint64_t)(SELCOLS) << 32) | ((uint64_t)(SELROWS) << 41) \
+           | ((uint64_t) 1 << 27) )
+
+#define AMX_FMUL16_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
+  AMX_FMUL16_SEL( ((uint64_t)0x20 | COLIDX), 0, \
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+#define AMX_FMUL16_SELROW_REGALIGNED(ROWIDX, XREG, YREG, ZREGS) \
+  AMX_FMUL16_SEL( 0, ((uint64_t)0x20 | ROWIDX), \
+                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
 // For INT16 ---------------------------------------------------------------------------------------
 
 #define AMX_MAC16_COMMON(PADROWS, PADCOLS, ZREGS) \
@@ -123,5 +146,28 @@
 
 #define AMX_MUL16_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
   AMX_MUL16_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
+
+#define AMX_MAC16_SEL(SELCOLS, SELROWS, PADROWS, PADCOLS, ZREGS) \
+  AMX_MAC16(  (uint64_t)(PADCOLS) \
+           | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS) << 20) \
+           | ((uint64_t)(SELCOLS) << 32) | ((uint64_t)(SELROWS) << 41) )
+
+#define AMX_MAC16_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
+  AMX_MAC16_SEL( ((uint64_t)0x20 | COLIDX), 0, \
+                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+#define AMX_MUL16_SEL(SELCOLS, SELROWS, PADROWS, PADCOLS, ZREGS) \
+  AMX_MAC16(  (uint64_t)(PADCOLS) \
+           | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS) << 20) \
+           | ((uint64_t)(SELCOLS) << 32) | ((uint64_t)(SELROWS) << 41) \
+           | ((uint64_t) 1 << 27) )
+
+#define AMX_MUL16_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) \
+  AMX_MUL16_SEL( ((uint64_t)0x20 | COLIDX), 0, \
+                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
+
+#define AMX_MUL16_SELROW_REGALIGNED(ROWIDX, XREG, YREG, ZREGS) \
+  AMX_MUL16_SEL( 0, ((uint64_t)0x20 | ROWIDX), \
+                 ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
 
 

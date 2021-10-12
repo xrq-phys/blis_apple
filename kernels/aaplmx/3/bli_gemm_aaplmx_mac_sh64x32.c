@@ -151,7 +151,11 @@ void bli_shgemm_aaplmx_mac_64x32
     // Multiply by alpha.
     if ( *alpha != 1.0 )
         for ( int i = 0; i < 32; ++i ) {
-            assert( 0 );
+            AMX_EXTRX_REGALIGNED( i * 2 + 0, 2 );
+            AMX_EXTRX_REGALIGNED( i * 2 + 1, 3 );
+
+            AMX_FMUL16_SELCOL_REGALIGNED( i, 2, 0, 0 );
+            AMX_FMUL16_SELCOL_REGALIGNED( i, 3, 0, 1 );
         }
 
     __asm__ volatile
@@ -173,7 +177,13 @@ void bli_shgemm_aaplmx_mac_64x32
     // Write into Z registers.
     if ( *beta != 0.0 )
     {
-        assert( 0 );
+        for (int i = 0; i < 32; ++i) {
+            AMX_MEM( LDX, c + i * cs_c + 0 , 2 );
+            AMX_MEM( LDX, c + i * cs_c + 32, 3 );
+
+            AMX_FMA16_SELCOL_REGALIGNED( i, 2, 1, 0 );
+            AMX_FMA16_SELCOL_REGALIGNED( i, 3, 1, 1 );
+        }
     }
 
     if ( rs_c == 1 )
@@ -324,7 +334,11 @@ void bli_i16gemm_aaplmx_mac_64x32
     // Multiply by alpha.
     if ( *alpha != 1 )
         for ( int i = 0; i < 32; ++i ) {
-            assert( 0 );
+            AMX_EXTRX_REGALIGNED( i * 2 + 0, 2 );
+            AMX_EXTRX_REGALIGNED( i * 2 + 1, 3 );
+
+            AMX_MUL16_SELCOL_REGALIGNED( i, 2, 0, 0 );
+            AMX_MUL16_SELCOL_REGALIGNED( i, 3, 0, 1 );
         }
 
     __asm__ volatile
@@ -346,7 +360,13 @@ void bli_i16gemm_aaplmx_mac_64x32
     // Write into Z registers.
     if ( *beta != 0 )
     {
-        assert( 0 );
+        for (int i = 0; i < 32; ++i) {
+            AMX_MEM( LDX, c + i * cs_c + 0 , 2 );
+            AMX_MEM( LDX, c + i * cs_c + 32, 3 );
+
+            AMX_MAC16_SELCOL_REGALIGNED( i, 2, 1, 0 );
+            AMX_MAC16_SELCOL_REGALIGNED( i, 3, 1, 1 );
+        }
     }
 
     if ( rs_c == 1 )
