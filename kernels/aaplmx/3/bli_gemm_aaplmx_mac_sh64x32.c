@@ -32,8 +32,13 @@ void KERNELNAME(Ch,aaplmx_mac_64x32) \
        cntx_t*    restrict cntx   \
      ) \
 { \
-    void* a_next = bli_auxinfo_next_a( data ); \
-    void* b_next = bli_auxinfo_next_b( data ); \
+    void* a_next; \
+    void* b_next; \
+    if ( data ) \
+    { \
+        a_next = bli_auxinfo_next_a( data ); \
+        b_next = bli_auxinfo_next_b( data ); \
+    } \
 \
     /* As current the RE work has not discovered any
      *  broadcasting-load instruction yet, use this
@@ -152,7 +157,7 @@ _Pragma("nounroll") \
     AMX_MEM( LDY, beta_c, 1 ); \
 \
     /* Multiply by alpha. */ \
-    if ( *alpha != 1.0 ) \
+    if ( *alpha != (TypeName) 1 ) \
         for ( int i = 0; i < 32; ++i ) { \
             AMX_EXTRX_REGALIGNED( i * 2 + 0, 2 ); \
             AMX_EXTRX_REGALIGNED( i * 2 + 1, 3 ); \
@@ -161,24 +166,27 @@ _Pragma("nounroll") \
             OpMulSelCol( i, 3, 0, 1 ); \
         } \
 \
-    __asm__ volatile \
-    ( \
-      "prfm PLDL2STRM, [%[a_next], 64*0] \n\t" \
-      "prfm PLDL2STRM, [%[a_next], 64*1] \n\t" \
-      "prfm PLDL2STRM, [%[a_next], 64*2] \n\t" \
-      "prfm PLDL2STRM, [%[a_next], 64*3] \n\t" \
-      "prfm PLDL2STRM, [%[b_next], 64*0] \n\t" \
-      "prfm PLDL2STRM, [%[b_next], 64*1] \n\t" \
-      "prfm PLDL2STRM, [%[b_next], 64*2] \n\t" \
-      "prfm PLDL2STRM, [%[b_next], 64*3] \n\t" \
-      : \
-      : [a_next] "r" (a_next), \
-        [b_next] "r" (b_next)  \
-    ); \
+    if ( data ) \
+    { \
+        __asm__ volatile \
+        ( \
+          "prfm PLDL2STRM, [%[a_next], 64*0] \n\t" \
+          "prfm PLDL2STRM, [%[a_next], 64*1] \n\t" \
+          "prfm PLDL2STRM, [%[a_next], 64*2] \n\t" \
+          "prfm PLDL2STRM, [%[a_next], 64*3] \n\t" \
+          "prfm PLDL2STRM, [%[b_next], 64*0] \n\t" \
+          "prfm PLDL2STRM, [%[b_next], 64*1] \n\t" \
+          "prfm PLDL2STRM, [%[b_next], 64*2] \n\t" \
+          "prfm PLDL2STRM, [%[b_next], 64*3] \n\t" \
+          : \
+          : [a_next] "r" (a_next), \
+            [b_next] "r" (b_next)  \
+        ); \
+    } \
 \
     /* Load and multiply by beta.
      * Write into Z registers. */ \
-    if ( *beta != 0.0 ) \
+    if ( *beta != (TypeName) 0 ) \
     { \
         for (int i = 0; i < 32; ++i) { \
             AMX_MEM( LDX, c + i * cs_c + 0 , 2 ); \

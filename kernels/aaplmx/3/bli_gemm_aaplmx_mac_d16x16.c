@@ -28,8 +28,13 @@ void bli_sgemm_aaplmx_mac_32x32
        cntx_t*    restrict cntx
      )
 {
-    void* a_next = bli_auxinfo_next_a( data );
-    void* b_next = bli_auxinfo_next_b( data );
+    void* a_next;
+    void* b_next;
+    if ( data )
+    {
+        a_next = bli_auxinfo_next_a( data );
+        b_next = bli_auxinfo_next_b( data );
+    }
 
     // As current the RE work has not discovered any
     //  broadcasting-load instruction yet, use this
@@ -153,20 +158,23 @@ void bli_sgemm_aaplmx_mac_32x32
             AMX_FMUL32_SELCOL_REGALIGNED( i, 7, 0, 3 );
         }
 
-    __asm__ volatile
-    (
-      "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*1] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*2] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*3] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*0] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*1] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*2] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*3] \n\t"
-      :
-      : [a_next] "r" (a_next),
-        [b_next] "r" (b_next)
-    );
+    if ( data )
+    {
+        __asm__ volatile
+        (
+          "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*1] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*2] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*3] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*0] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*1] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*2] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*3] \n\t"
+          :
+          : [a_next] "r" (a_next),
+            [b_next] "r" (b_next)
+        );
+    }
 
     // Load and multiply by beta.
     // Write into Z registers.
@@ -228,8 +236,13 @@ void bli_dgemm_aaplmx_mac_16x16
        cntx_t*    restrict cntx
      )
 {
-    void* a_next = bli_auxinfo_next_a( data );
-    void* b_next = bli_auxinfo_next_b( data );
+    void* a_next;
+    void* b_next;
+    if ( data )
+    {
+        a_next = bli_auxinfo_next_a( data );
+        b_next = bli_auxinfo_next_b( data );
+    }
 
     // As current the RE work has not discovered any
     //  broadcasting-load instruction yet, use this
@@ -376,20 +389,23 @@ void bli_dgemm_aaplmx_mac_16x16
             AMX_FMUL64_SELCOL_REGALIGNED( i, 7, 0, 3 );
         }
 
-    __asm__ volatile
-    (
-      "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*1] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*2] \n\t"
-      "prfm PLDL2STRM, [%[a_next], 64*3] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*0] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*1] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*2] \n\t"
-      "prfm PLDL2STRM, [%[b_next], 64*3] \n\t"
-      :
-      : [a_next] "r" (a_next),
-        [b_next] "r" (b_next)
-    );
+    if ( data )
+    {
+        __asm__ volatile
+        (
+          "prfm PLDL2STRM, [%[a_next], 64*0] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*1] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*2] \n\t"
+          "prfm PLDL2STRM, [%[a_next], 64*3] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*0] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*1] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*2] \n\t"
+          "prfm PLDL2STRM, [%[b_next], 64*3] \n\t"
+          :
+          : [a_next] "r" (a_next),
+            [b_next] "r" (b_next)
+        );
+    }
 
     // Load and multiply by beta.
     // Write into Z registers.
