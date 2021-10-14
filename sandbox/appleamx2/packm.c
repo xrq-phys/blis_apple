@@ -1,4 +1,6 @@
 #include "bli_sandbox.h"
+#include "../../kernels/aaplmx/3/amx.h"
+#include "../../kernels/aaplmx/3/amx_ext.h"
 #include <arm_neon.h>
 
 
@@ -13,6 +15,7 @@ void PACK_FUNC_NAME(ch, a) \
     ) \
 { \
     int p_idx; \
+    AMX_START(); \
 \
     DTYPE_IN* adest = apack; \
     for (int i=0; i<m; i+=MR) \
@@ -23,70 +26,81 @@ void PACK_FUNC_NAME(ch, a) \
             p_idx = 0; \
             for (int p=0; p<k; p++) \
             {  \
-                *adest++ = ap[ (i+ 0+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 1+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 2+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 3+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 4+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 5+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 6+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 7+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 8+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 9+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+10+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+11+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+12+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+13+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+14+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+15+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+16+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+17+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+18+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+19+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+20+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+21+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+22+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+23+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+24+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+25+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+26+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+27+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+28+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+29+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+30+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+31+ 0)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 0+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 1+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 2+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 3+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 4+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 5+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 6+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 7+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 8+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+ 9+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+10+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+11+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+12+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+13+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+14+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+15+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+16+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+17+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+18+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+19+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+20+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+21+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+22+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+23+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+24+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+25+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+26+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+27+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+28+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+29+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+30+32)*rs_a + p_idx*cs_a ]; \
-                *adest++ = ap[ (i+31+32)*rs_a + p_idx*cs_a ]; \
+                if ( rs_a == 1 ) \
+                { \
+                    AMX_MEM( LDX, ap    + p_idx*cs_a, 0 ); \
+                    AMX_MEM( LDX, ap+32 + p_idx*cs_a, 1 ); \
+                    AMX_MEM( STX, adest   , 0 ); \
+                    AMX_MEM( STX, adest+32, 1 ); \
+                    adest += 64; \
+                } \
+                else \
+                { \
+                    *adest++ = ap[ (i+ 0+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 1+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 2+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 3+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 4+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 5+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 6+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 7+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 8+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 9+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+10+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+11+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+12+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+13+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+14+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+15+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+16+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+17+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+18+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+19+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+20+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+21+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+22+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+23+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+24+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+25+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+26+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+27+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+28+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+29+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+30+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+31+ 0)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 0+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 1+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 2+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 3+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 4+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 5+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 6+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 7+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 8+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+ 9+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+10+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+11+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+12+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+13+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+14+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+15+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+16+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+17+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+18+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+19+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+20+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+21+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+22+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+23+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+24+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+25+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+26+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+27+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+28+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+29+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+30+32)*rs_a + p_idx*cs_a ]; \
+                    *adest++ = ap[ (i+31+32)*rs_a + p_idx*cs_a ]; \
+                } \
                 p_idx += 1; \
             } \
         } \
@@ -108,6 +122,7 @@ void PACK_FUNC_NAME(ch, a) \
             } \
         } \
     } \
+    AMX_STOP(); \
 } 
 
 #define BIT16_PACK_B(ch, DTYPE_IN) \
@@ -121,6 +136,7 @@ void PACK_FUNC_NAME(ch, b) \
     ) \
 { \
     int p_idx; \
+    AMX_START(); \
 \
     DTYPE_IN* bdest = bpack; \
     for( int j=0; j<n; j += NR ) \
@@ -131,38 +147,47 @@ void PACK_FUNC_NAME(ch, b) \
             p_idx = 0; \
             for ( int p=0; p<k; p++ ) \
             { \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 0)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 1)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 2)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 3)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 4)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 5)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 6)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 7)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 8)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+ 9)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+10)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+11)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+12)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+13)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+14)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+15)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+16)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+17)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+18)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+19)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+20)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+21)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+22)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+23)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+24)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+25)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+26)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+27)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+28)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+29)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+30)*cs_b ]; \
-                *bdest++ = bp[ p_idx*rs_b + (j+31)*cs_b ]; \
+                if ( cs_b == 1 ) \
+                { \
+                    AMX_MEM( LDY, bp + p_idx*rs_b, 0 ); \
+                    AMX_MEM( STY, bdest, 0 ); \
+                    bdest += 32; \
+                } \
+                else \
+                { \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 0)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 1)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 2)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 3)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 4)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 5)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 6)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 7)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 8)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+ 9)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+10)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+11)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+12)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+13)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+14)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+15)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+16)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+17)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+18)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+19)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+20)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+21)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+22)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+23)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+24)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+25)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+26)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+27)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+28)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+29)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+30)*cs_b ]; \
+                    *bdest++ = bp[ p_idx*rs_b + (j+31)*cs_b ]; \
+                } \
                 p_idx += 1; \
             } \
         } \
@@ -184,6 +209,7 @@ void PACK_FUNC_NAME(ch, b) \
             } \
         } \
     } \
+    AMX_STOP(); \
 };
 
 

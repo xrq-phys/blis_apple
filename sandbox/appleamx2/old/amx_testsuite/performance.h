@@ -40,7 +40,7 @@ double GEN_PERF_FUNC_NAME(ch) ( \
             k, \
             &alpha, \
             A, 1, m, \
-            B, 1, k, \
+            B, n, 1, \
             &beta, \
             C, 1, m \
         ); \
