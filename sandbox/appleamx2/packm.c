@@ -4,7 +4,7 @@
 #include <arm_neon.h>
 
 
-#define BIT16_PACK_A(ch, DTYPE_IN) \
+#define BIT16_PACK_A(ch, DTYPE_IN, OpMulSelRow) \
 \
 void PACK_FUNC_NAME(ch, a) \
     ( \
@@ -14,7 +14,10 @@ void PACK_FUNC_NAME(ch, a) \
         DTYPE_IN* apack \
     ) \
 { \
+    int p; \
     int p_idx; \
+    static const DTYPE_IN kappa[32] = \
+        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }; \
     AMX_START(); \
 \
     DTYPE_IN* adest = apack; \
@@ -23,8 +26,34 @@ void PACK_FUNC_NAME(ch, a) \
         int ib = bli_min(MR, m-i); \
         if (ib == MR) /* Full size column height */ \
         { \
+            p     = 0; \
             p_idx = 0; \
-            for (int p=0; p<k; p++) \
+            if ( cs_a == 1 ) \
+            { \
+                AMX_MEM( LDX, kappa, 0 ); \
+                for ( ; p+32<k; p+=32 ) \
+                { \
+                    _Pragma("unroll") \
+                    for ( int ivec = 0; ivec < 4; ++ivec ) \
+                        for ( int jvec = 0; jvec < 8; ++jvec ) \
+                        { \
+                            AMX_MEM( LDY, ap + (i + 8*ivec + jvec +  0)*rs_a + p_idx*cs_a, jvec ); \
+                            OpMulSelRow( 8*ivec + jvec, 0, jvec, 0 ); \
+                            AMX_MEM( LDY, ap + (i + 8*ivec + jvec + 32)*rs_a + p_idx*cs_a, jvec ); \
+                            OpMulSelRow( 8*ivec + jvec, 0, jvec, 1 ); \
+                        } \
+                    _Pragma("unroll") \
+                    for ( int ivec = 0; ivec < 32; ++ivec ) \
+                    { \
+                        AMX_MEM( STZ, adest + 64 * ivec +  0, ivec * 2 + 0 ); \
+                        AMX_MEM( STZ, adest + 64 * ivec + 32, ivec * 2 + 1 ); \
+                    } \
+                    adest += 32 * 64; \
+                    p_idx += 32; \
+                } \
+            } \
+\
+            for ( ; p<k; p++ ) \
             {  \
                 if ( rs_a == 1 ) \
                 { \
@@ -125,7 +154,7 @@ void PACK_FUNC_NAME(ch, a) \
     AMX_STOP(); \
 } 
 
-#define BIT16_PACK_B(ch, DTYPE_IN) \
+#define BIT16_PACK_B(ch, DTYPE_IN, OpMulSelRow) \
 \
 void PACK_FUNC_NAME(ch, b) \
     ( \
@@ -135,7 +164,10 @@ void PACK_FUNC_NAME(ch, b) \
         DTYPE_IN* bpack \
     ) \
 { \
+    int p; \
     int p_idx; \
+    static const DTYPE_IN kappa[32] = \
+        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }; \
     AMX_START(); \
 \
     DTYPE_IN* bdest = bpack; \
@@ -144,8 +176,29 @@ void PACK_FUNC_NAME(ch, b) \
         int jb = bli_min(NR, n-j); \
         if ( jb == NR ) /* Full column width micro-panel.*/  \
         { \
+            p     = 0; \
             p_idx = 0; \
-            for ( int p=0; p<k; p++ ) \
+            if ( rs_b == 1 ) \
+            { \
+                AMX_MEM( LDX, kappa, 0 ); \
+                for ( ; p+32<k; p+=32 ) \
+                { \
+                    _Pragma("unroll") \
+                    for ( int ivec = 0; ivec < 4; ++ivec ) \
+                        for ( int jvec = 0; jvec < 8; ++jvec ) \
+                        { \
+                            AMX_MEM( LDY, bp + p_idx*rs_b + (j + 8*ivec + jvec)*cs_b, jvec ); \
+                            OpMulSelRow( 8*ivec + jvec, 0, jvec, 0 ); \
+                        } \
+                    _Pragma("unroll") \
+                    for ( int ivec = 0; ivec < 32; ++ivec ) \
+                        AMX_MEM( STZ, bdest + 32 * ivec, ivec * 2 + 0 ); \
+                    bdest += 32 * 32; \
+                    p_idx += 32; \
+                } \
+            } \
+\
+            for ( ; p<k; p++ ) \
             { \
                 if ( cs_b == 1 ) \
                 { \
@@ -214,8 +267,8 @@ void PACK_FUNC_NAME(ch, b) \
 
 
 // 16 bit routines
-BIT16_PACK_A(sh, float16_t);
-BIT16_PACK_B(sh, float16_t);
-BIT16_PACK_A(i16, int16_t);
-BIT16_PACK_B(i16, int16_t);
+BIT16_PACK_A( sh, float16_t, AMX_FMUL16_SELROW_REGALIGNED);
+BIT16_PACK_B( sh, float16_t, AMX_FMUL16_SELROW_REGALIGNED);
+BIT16_PACK_A(i16,   int16_t,  AMX_MUL16_SELROW_REGALIGNED);
+BIT16_PACK_B(i16,   int16_t,  AMX_MUL16_SELROW_REGALIGNED);
 
