@@ -124,7 +124,51 @@ _Pragma("nounroll") \
         b += 32; \
     } \
 \
-    /* TODO: Add Alpha support. */ \
+    /* Load alpha & beta. */ \
+    AMX_MEM( LDY, alphac, 0 ); \
+    AMX_MEM( LDY, beta_c, 1 ); \
+\
+    /* Multiply by alpha. */ \
+    if ( *alpha != 1.0 || *beta != 0.0 ) \
+        for ( int i = 0; i < 16; ++i ) { \
+            AMX_EXTRX_REGALIGNED( i * 4 + 0, 4 ); \
+            AMX_EXTRX_REGALIGNED( i * 4 + 1, 5 ); \
+            AMX_EXTRX_REGALIGNED( i * 4 + 2, 6 ); \
+            AMX_EXTRX_REGALIGNED( i * 4 + 3, 7 ); \
+\
+            if ( *beta != 0.0 ) \
+            { \
+                AMX_MEM( LDZI, c + (i * 2 + 0) * cs_c + 0 , i * 4 + 0 ); \
+                AMX_MEM( LDZI, c + (i * 2 + 0) * cs_c + 16, i * 4 + 1 ); \
+                AMX_MEM( LDZI, c + (i * 2 + 1) * cs_c + 0 , i * 4 + 2 ); \
+                AMX_MEM( LDZI, c + (i * 2 + 1) * cs_c + 16, i * 4 + 3 ); \
+\
+                if ( *beta != 1.0 ) \
+                { /* Self-scale by beta. */ \
+                    AMX_EXTRX_REGALIGNED( i * 4 + 0, 0 ); \
+                    AMX_EXTRX_REGALIGNED( i * 4 + 1, 1 ); \
+                    AMX_EXTRX_REGALIGNED( i * 4 + 2, 2 ); \
+                    AMX_EXTRX_REGALIGNED( i * 4 + 3, 3 ); \
+\
+                    OpMulSelCol( i, 0, 1, 0 ); \
+                    OpMulSelCol( i, 1, 1, 1 ); \
+                    OpMulSelCol( i, 2, 1, 2 ); \
+                    OpMulSelCol( i, 3, 1, 3 ); \
+                } \
+\
+                OpMulAddSelCol( i, 4, 0, 0 ); \
+                OpMulAddSelCol( i, 5, 0, 1 ); \
+                OpMulAddSelCol( i, 6, 0, 2 ); \
+                OpMulAddSelCol( i, 7, 0, 3 ); \
+            } \
+            else \
+            { \
+                OpMulSelCol( i, 4, 0, 0 ); \
+                OpMulSelCol( i, 5, 0, 1 ); \
+                OpMulSelCol( i, 6, 0, 2 ); \
+                OpMulSelCol( i, 7, 0, 3 ); \
+            } \
+        } \
 \
     if ( data ) \
     { \
@@ -143,8 +187,6 @@ _Pragma("nounroll") \
             [b_next] "r" (b_next)  \
         ); \
     } \
-\
-    /* TODO: Add Beta support. */ \
 \
     if ( rs_c == 1 ) \
     { \
@@ -166,6 +208,11 @@ PASTEPAC_16BIT_TO_32BIT(
         AMX_FMA32_SELCOL_REGALIGNED,
         AMX_FMUL16_32_COMMON_REGALIGNED,
         AMX_FMUL32_SELCOL_REGALIGNED)
+
+// Some int32-instructions are not supported by hardware.
+// TODO: Find way for circumventing this.
+#define AMX_MAC32_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) assert( 0 )
+#define AMX_MUL32_SELCOL_REGALIGNED(COLIDX, XREG, YREG, ZREGS) assert( 0 )
 
 PASTEPAC_16BIT_TO_32BIT(
         i32_i16,
