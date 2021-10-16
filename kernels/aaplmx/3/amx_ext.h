@@ -170,4 +170,35 @@
   AMX_MUL16_SEL( 0, ((uint64_t)0x20 | ROWIDX), \
                  ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), ZREGS )
 
+// For FP16 -> FP32 -------------------------------------------------------------------------------
+
+#define AMX_FMA16_32_COMMON(PADROWS, PADCOLS, ZREGS) \
+  AMX_FMA16(  (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) \
+           | ((uint64_t) 1 << 62) )
+
+#define AMX_FMA16_32_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
+  AMX_FMA16_32_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
+
+#define AMX_FMUL16_32_COMMON(PADROWS, PADCOLS, ZREGS) \
+  AMX_FMA16(  (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) \
+           | ((uint64_t) 1 << 62) | ((uint64_t) 1 << 27) )
+
+#define AMX_FMUL16_32_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
+  AMX_FMUL16_32_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
+
+// For INT16 -> INT32 ------------------------------------------------------------------------------
+
+#define AMX_MAC16_32_COMMON(PADROWS, PADCOLS, ZREGS) \
+  AMX_MAC16(  (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) \
+           | ((uint64_t) 1 << 62) )
+
+#define AMX_MAC16_32_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
+  AMX_MAC16_32_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
+
+#define AMX_MUL16_32_COMMON(PADROWS, PADCOLS, ZREGS) \
+  AMX_MAC16(  (uint64_t)(PADCOLS) | ((uint64_t)(PADROWS) << 10) | ((uint64_t)(ZREGS)<< 20) \
+           | ((uint64_t) 1 << 62) | ((uint64_t) 1 << 27) )
+
+#define AMX_MUL16_32_COMMON_REGALIGNED(XREG, YREG, ZREGS) \
+  AMX_MUL16_32_COMMON( ((uint64_t)(XREG) << 6), ((uint64_t)(YREG) << 6), (ZREGS) )
 
