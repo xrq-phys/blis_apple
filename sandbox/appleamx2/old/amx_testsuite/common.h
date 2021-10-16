@@ -7,7 +7,9 @@ enum DATATYPES {
     DOUBLE ,
     SINGLE ,
     FLOAT16,
-    INT16
+    FLOAT16_32,
+    INT16,
+    INT16_32
 };
 
 #endif

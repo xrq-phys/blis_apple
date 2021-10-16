@@ -25,7 +25,7 @@ double GEN_PERF_FUNC_NAME(ch) ( \
     C = (output_t*) malloc(m*n*sizeof(output_t)); \
      \
     alpha = 1; \
-    beta = 1; \
+    beta = 0; \
  \
     double best = 1e9; \
  \
@@ -40,7 +40,7 @@ double GEN_PERF_FUNC_NAME(ch) ( \
             k, \
             &alpha, \
             A, 1, m, \
-            B, n, 1, \
+            B, 1, k, \
             &beta, \
             C, 1, m \
         ); \

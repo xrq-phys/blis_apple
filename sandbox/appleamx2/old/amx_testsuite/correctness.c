@@ -32,8 +32,10 @@ const char* get_kernel_name(int kernel_id)
 {
     switch (kernel_id)
     {
-        case FLOAT16 : return "bli_shgemm";
-        case INT16   : return "bli_i16gemm";
+        case FLOAT16    : return "bli_shgemm";
+        case FLOAT16_32 : return "bli_s_shgemm";
+        case INT16      : return "bli_i16gemm";
+        case INT16_32   : return "bli_i32_i16gemm";
         default: printf("INCORRECT KERNEL ID\n"); exit(-1);
     }
 }
@@ -192,16 +194,20 @@ void correctness_checker(
 
 
 // create all the correctness checking functions for each kernel
-GEN_I_COR_KERNEL( sh,  bli_shgemm, float16_t, float16_t);
-GEN_I_COR_KERNEL(i16, bli_i16gemm,   int16_t,   int16_t);
+GEN_I_COR_KERNEL(     sh,      bli_shgemm, float16_t, float16_t);
+GEN_I_COR_KERNEL(   s_sh,    bli_s_shgemm, float16_t, float32_t);
+GEN_I_COR_KERNEL(    i16,     bli_i16gemm,   int16_t,   int16_t);
+GEN_I_COR_KERNEL(i32_i16, bli_i32_i16gemm,   int16_t,   int32_t);
 
 // using the DATATYPE enum, gather test the correctness of the respective GEMM kernel
 void run_correctness_kernel(int kernel_id, int m, int n, int k)
 {
     switch (kernel_id)
     {
-        case FLOAT16 : shcorrectness_kernel (m, n, k); break;
-        case INT16   : i16correctness_kernel(m, n, k); break;
+        case FLOAT16    :     shcorrectness_kernel (m, n, k); break;
+        case FLOAT16_32 :   s_shcorrectness_kernel (m, n, k); break;
+        case INT16      :     i16correctness_kernel(m, n, k); break;
+        case INT16_32   : i32_i16correctness_kernel(m, n, k); break;
         default: break;
     }
 }
@@ -221,6 +227,8 @@ void test_correctness(int kernel_id, int start, int end, int inc)
 // correctness test for bfloat16 gemm
 int main(int argc, char *argv[])
 {
-    test_correctness(FLOAT16, 80, 2000, 80);
-    test_correctness(  INT16, 80, 2000, 80);
+    test_correctness(   FLOAT16, 80, 2000, 80);
+    test_correctness(FLOAT16_32, 80, 2000, 80);
+    test_correctness(     INT16, 80, 2000, 80);
+    // test_correctness(  INT16_32, 80, 2000, 80);
 }

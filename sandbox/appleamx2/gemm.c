@@ -182,10 +182,12 @@ void GEMM_FUNC_NAME(ch) \
 } 
 
 
-GENERIC_GEMM( 
-    sh, // kernel name prefix 
+// Pure data types.
+
+GENERIC_GEMM(
+    sh, // kernel name prefix
     float16_t, // input type
-    float16_t, // output type    
+    float16_t, // output type
     pb, // innermost loop iterations
     sh_pack_a, // pack kernel for A
     sh_pack_b, // pack kernel for B
@@ -200,10 +202,10 @@ GENERIC_GEMM(
     0 // B_ALIGN
 );
 
-GENERIC_GEMM( 
-    i16, // kernel name prefix 
+GENERIC_GEMM(
+    i16, // kernel name prefix
     int16_t, // input type
-    int16_t, // output type    
+    int16_t, // output type
     pb, // innermost loop iterations
     i16_pack_a, // pack kernel for A
     i16_pack_b, // pack kernel for B
@@ -212,6 +214,44 @@ GENERIC_GEMM(
     64, // MR
     32, // NR
     768, // MC
+    4032, // KC
+    32768, // NC
+    0, // A_ALIGN
+    0 // B_ALIGN
+);
+
+// Mixed data types.
+
+GENERIC_GEMM(
+    s_sh, // kernel name prefix
+    float16_t, // input type
+    float32_t, // output type
+    pb, // innermost loop iterations
+    sh_pack_a, // pack kernel for A
+    sh_pack_b, // pack kernel for B
+    bli_s_shgemm_aaplmx_mac_32x32, // microkernel function name
+    1, // K_MMA
+    32, // MR
+    32, // NR
+    384, // MC
+    4032, // KC
+    32768, // NC
+    0, // A_ALIGN
+    0 // B_ALIGN
+);
+
+GENERIC_GEMM(
+    i32_i16, // kernel name prefix
+    int16_t, // input type
+    int32_t, // output type
+    pb, // innermost loop iterations
+    i16_pack_a, // pack kernel for A
+    i16_pack_b, // pack kernel for B
+    bli_i32_i16gemm_aaplmx_mac_32x32, // microkernel function name
+    1, // K_MMA
+    32, // MR
+    32, // NR
+    384, // MC
     4032, // KC
     32768, // NC
     0, // A_ALIGN

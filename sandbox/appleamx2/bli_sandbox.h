@@ -46,12 +46,16 @@
 #define AMX_PG_SIZE 1024
 
 // microkernel prototypes
-GEMM_UKR_PROT2( float16_t, float16_t,  sh, gemm_aaplmx_mac_64x32 )
-GEMM_UKR_PROT2(   int16_t,   int16_t, i16, gemm_aaplmx_mac_64x32 )
+GEMM_UKR_PROT2( float16_t, float16_t,      sh, gemm_aaplmx_mac_64x32 )
+GEMM_UKR_PROT2( float16_t, float32_t,    s_sh, gemm_aaplmx_mac_32x32 )
+GEMM_UKR_PROT2(   int16_t,   int16_t,     i16, gemm_aaplmx_mac_64x32 )
+GEMM_UKR_PROT2(   int16_t,   int32_t, i32_i16, gemm_aaplmx_mac_32x32 )
 
 // gemm kernel prototypes
-GEMM_FUNC_PROT( float16_t, float16_t,  sh);
-GEMM_FUNC_PROT(   int16_t,   int16_t, i16);
+GEMM_FUNC_PROT( float16_t, float16_t,      sh);
+GEMM_FUNC_PROT( float16_t, float32_t,    s_sh);
+GEMM_FUNC_PROT(   int16_t,   int16_t,     i16);
+GEMM_FUNC_PROT(   int16_t,   int32_t, i32_i16);
 
 // pack kernel prototypes
 PACK_MACRO_PROTO( sh, float16_t)
