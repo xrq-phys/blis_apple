@@ -130,8 +130,8 @@ void bli_cntx_init_aaplmx( cntx_t* cntx )
 	//                                           s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    32,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],  1024,   640,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2016,  2016,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   960,   480,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],   380,   380,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  4096,  4096,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache

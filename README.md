@@ -9,4 +9,5 @@ Known issues:
 - TRSM might fail. Try commenting out function call to `bli_cntx_set_packm_kers` in `config/aaplmx/bli_cntx_init_aaplmx.c` if your need TRSM to work.
 - Performance is around 75% the hardware peak. This is worse than the Accelerate framework on small size matrices while better on large size one.
   ![](docs/graphs/aaplmx/output_st_dgemm_asm_blis.png)
+  ![](docs/graphs/aaplmx/output_1s_sgemm_asm_blis.png)
 
