@@ -28,7 +28,7 @@ void bli_dgemm_aaplmx_mac_32x16
 {
     void* a_next;
     void* b_next;
-    if ( beta )
+    if ( data )
     {
         a_next = bli_auxinfo_next_a( data );
         b_next = bli_auxinfo_next_b( data );
