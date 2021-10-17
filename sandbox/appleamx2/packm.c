@@ -265,10 +265,69 @@ void PACK_FUNC_NAME(ch, b) \
     AMX_STOP(); \
 };
 
-
 // 16 bit routines
 BIT16_PACK_A( sh, float16_t, AMX_FMUL16_SELROW_REGALIGNED);
 BIT16_PACK_B( sh, float16_t, AMX_FMUL16_SELROW_REGALIGNED);
 BIT16_PACK_A(i16,   int16_t,  AMX_MUL16_SELROW_REGALIGNED);
 BIT16_PACK_B(i16,   int16_t,  AMX_MUL16_SELROW_REGALIGNED);
+
+
+#define BLIS_CPACK_A(ch, DTYPE_IN, BliPackm, LDP, PackScheme) \
+\
+void PACK_FUNC_NAME(ch, a) \
+    ( \
+        dim_t MR, \
+        int m, int k, \
+        DTYPE_IN* ap, int rs_a, int cs_a, \
+        DTYPE_IN* apack \
+    ) \
+{ \
+    DTYPE_IN kappa = 1; \
+    cntx_t  *cntx = bli_gks_query_cntx(); \
+\
+    BliPackm \
+    ( \
+      BLIS_NO_CONJUGATE, \
+      PackScheme, \
+      m, \
+      k, \
+      k, \
+      &kappa, \
+      ap, rs_a, cs_a, \
+      apack, LDP, \
+      cntx \
+    ); \
+} 
+
+#define BLIS_CPACK_B(ch, DTYPE_IN, BliPackm, LDP, PackScheme) \
+\
+void PACK_FUNC_NAME(ch, b) \
+    ( \
+        dim_t NR, \
+        int k, int n, \
+        DTYPE_IN* bp, int rs_b, int cs_b, \
+        DTYPE_IN* bpack \
+    ) \
+{ \
+    DTYPE_IN kappa = 1; \
+    cntx_t  *cntx = bli_gks_query_cntx(); \
+\
+    BliPackm \
+    ( \
+      BLIS_NO_CONJUGATE, \
+      PackScheme, \
+      n, \
+      k, \
+      k, \
+      &kappa, \
+      bp, rs_b, cs_b, \
+      bpack, LDP, \
+      cntx \
+    ); \
+} 
+
+BLIS_CPACK_A(s_, float32_t, bli_spackm_aaplmx_mac_32xk, 32, BLIS_PACKED_COL_PANELS)
+BLIS_CPACK_B(s_, float32_t, bli_spackm_aaplmx_mac_32xk, 32, BLIS_PACKED_ROW_PANELS)
+BLIS_CPACK_A(d_, float64_t, bli_dpackm_aaplmx_mac_32xk, 32, BLIS_PACKED_COL_PANELS)
+BLIS_CPACK_B(d_, float64_t, bli_dpackm_aaplmx_mac_16xk, 16, BLIS_PACKED_ROW_PANELS)
 

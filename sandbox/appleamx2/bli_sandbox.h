@@ -52,12 +52,16 @@ GEMM_UKR_PROT2(   int16_t,   int16_t,     i16, gemm_aaplmx_mac_64x32 )
 GEMM_UKR_PROT2(   int16_t,   int32_t, i32_i16, gemm_aaplmx_mac_32x32 )
 
 // gemm kernel prototypes
+GEMM_FUNC_PROT( float64_t, float64_t,      d_);
+GEMM_FUNC_PROT( float32_t, float32_t,      s_);
 GEMM_FUNC_PROT( float16_t, float16_t,      sh);
 GEMM_FUNC_PROT( float16_t, float32_t,    s_sh);
 GEMM_FUNC_PROT(   int16_t,   int16_t,     i16);
 GEMM_FUNC_PROT(   int16_t,   int32_t, i32_i16);
 
 // pack kernel prototypes
+PACK_MACRO_PROTO( d_, float64_t)
+PACK_MACRO_PROTO( s_, float32_t)
 PACK_MACRO_PROTO( sh, float16_t)
 PACK_MACRO_PROTO(i16,   int16_t)
 

@@ -185,6 +185,42 @@ void GEMM_FUNC_NAME(ch) \
 // Pure data types.
 
 GENERIC_GEMM(
+    d_, // kernel name prefix
+    float64_t, // input type
+    float64_t, // output type
+    pb, // innermost loop iterations
+    d__pack_a, // pack kernel for A
+    d__pack_b, // pack kernel for B
+    bli_dgemm_aaplmx_mac_32x16, // microkernel function name
+    1, // K_MMA
+    32, // MR
+    16, // NR
+    480, // MC
+    380, // KC
+    16384, // NC
+    0, // A_ALIGN
+    0 // B_ALIGN
+);
+
+GENERIC_GEMM(
+    s_, // kernel name prefix
+    float32_t, // input type
+    float32_t, // output type
+    pb, // innermost loop iterations
+    s__pack_a, // pack kernel for A
+    s__pack_b, // pack kernel for B
+    bli_sgemm_aaplmx_mac_32x32, // microkernel function name
+    1, // K_MMA
+    32, // MR
+    32, // NR
+    960, // MC
+    380, // KC
+    16384, // NC
+    0, // A_ALIGN
+    0 // B_ALIGN
+);
+
+GENERIC_GEMM(
     sh, // kernel name prefix
     float16_t, // input type
     float16_t, // output type
@@ -195,8 +231,8 @@ GENERIC_GEMM(
     1, // K_MMA
     64, // MR
     32, // NR
-    768, // MC
-    4032, // KC
+    1024, // MC
+    1024, // KC
     32768, // NC
     0, // A_ALIGN
     0 // B_ALIGN
@@ -213,8 +249,8 @@ GENERIC_GEMM(
     1, // K_MMA
     64, // MR
     32, // NR
-    768, // MC
-    4032, // KC
+    1024, // MC
+    1024, // KC
     32768, // NC
     0, // A_ALIGN
     0 // B_ALIGN
@@ -233,8 +269,8 @@ GENERIC_GEMM(
     1, // K_MMA
     32, // MR
     32, // NR
-    384, // MC
-    4032, // KC
+    960, // MC
+    760, // KC
     32768, // NC
     0, // A_ALIGN
     0 // B_ALIGN
@@ -251,8 +287,8 @@ GENERIC_GEMM(
     1, // K_MMA
     32, // MR
     32, // NR
-    384, // MC
-    4032, // KC
+    960, // MC
+    760, // KC
     32768, // NC
     0, // A_ALIGN
     0 // B_ALIGN

@@ -32,6 +32,8 @@ const char* get_kernel_name(int kernel_id)
 {
     switch (kernel_id)
     {
+        case FLOAT64    : return "bli_d_gemm";
+        case FLOAT32    : return "bli_s_gemm";
         case FLOAT16    : return "bli_shgemm";
         case FLOAT16_32 : return "bli_s_shgemm";
         case INT16      : return "bli_i16gemm";
@@ -194,6 +196,8 @@ void correctness_checker(
 
 
 // create all the correctness checking functions for each kernel
+GEN_I_COR_KERNEL(     d_,      bli_d_gemm, float64_t, float64_t);
+GEN_I_COR_KERNEL(     s_,      bli_s_gemm, float32_t, float32_t);
 GEN_I_COR_KERNEL(     sh,      bli_shgemm, float16_t, float16_t);
 GEN_I_COR_KERNEL(   s_sh,    bli_s_shgemm, float16_t, float32_t);
 GEN_I_COR_KERNEL(    i16,     bli_i16gemm,   int16_t,   int16_t);
@@ -204,6 +208,8 @@ void run_correctness_kernel(int kernel_id, int m, int n, int k)
 {
     switch (kernel_id)
     {
+        case FLOAT64    :     d_correctness_kernel (m, n, k); break;
+        case FLOAT32    :     s_correctness_kernel (m, n, k); break;
         case FLOAT16    :     shcorrectness_kernel (m, n, k); break;
         case FLOAT16_32 :   s_shcorrectness_kernel (m, n, k); break;
         case INT16      :     i16correctness_kernel(m, n, k); break;
@@ -227,8 +233,10 @@ void test_correctness(int kernel_id, int start, int end, int inc)
 // correctness test for bfloat16 gemm
 int main(int argc, char *argv[])
 {
-    test_correctness(   FLOAT16, 80, 2000, 80);
-    test_correctness(FLOAT16_32, 80, 2000, 80);
-    test_correctness(     INT16, 80, 2000, 80);
-    // test_correctness(  INT16_32, 80, 2000, 80);
+    test_correctness(   FLOAT32, 80, 800, 80);
+    test_correctness(   FLOAT64, 80, 800, 80);
+    test_correctness(   FLOAT16, 80, 800, 80);
+    test_correctness(FLOAT16_32, 80, 800, 80);
+    test_correctness(     INT16, 80, 800, 80);
+    // test_correctness(  INT16_32, 80, 800, 80);
 }

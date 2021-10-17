@@ -4,8 +4,8 @@
 
 // enumerate all datatypes that will be tested
 enum DATATYPES {
-    DOUBLE ,
-    SINGLE ,
+    FLOAT64,
+    FLOAT32,
     FLOAT16,
     FLOAT16_32,
     INT16,

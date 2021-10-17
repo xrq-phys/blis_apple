@@ -20,6 +20,8 @@ const char* get_kernel_name(int kernel_id)
 {
     switch (kernel_id)
     {
+        case FLOAT64    : return "bli_d_gemm";
+        case FLOAT32    : return "bli_s_gemm";
         case FLOAT16    : return "bli_shgemm";
         case FLOAT16_32 : return "bli_s_shgemm";
         case INT16      : return "bli_i16gemm";
@@ -29,6 +31,8 @@ const char* get_kernel_name(int kernel_id)
 }
 
 // create all the performance gathering functions for each kernel
+GET_PERF_API_TEMP(     d_,      bli_d_gemm, float64_t, float64_t);
+GET_PERF_API_TEMP(     s_,      bli_s_gemm, float32_t, float32_t);
 GET_PERF_API_TEMP(     sh,      bli_shgemm, float16_t, float16_t);
 GET_PERF_API_TEMP(   s_sh,    bli_s_shgemm, float16_t, float32_t);
 GET_PERF_API_TEMP(    i16,     bli_i16gemm,   int16_t,   int16_t);
@@ -40,6 +44,8 @@ double run_kernel(int kernel_id, int nreps, int m, int n, int k)
 {
     switch (kernel_id)
     {
+        case FLOAT64    : return test_d_api     (nreps, m, n, k);
+        case FLOAT32    : return test_s_api     (nreps, m, n, k);
         case FLOAT16    : return test_shapi     (nreps, m, n, k);
         case FLOAT16_32 : return test_s_shapi   (nreps, m, n, k);
         case INT16      : return test_i16api    (nreps, m, n, k);
@@ -81,19 +87,16 @@ void get_perf(int kernel_id, int nreps, int start, int end, int inc)
 
 int main(int argc, char *argv[])
 {
-    // initialize a square problem set range
-    int start = 80;
-    int end = 4800;
-    int inc = 80;
-    
     // number of times the kernel will be run
     int nreps = 5;
 
     // run a respective kernel
-    get_perf(    FLOAT16, nreps, start, end, inc);
-    get_perf( FLOAT16_32, nreps, start, end, inc);
-    get_perf(      INT16, nreps, start, end, inc);
-    get_perf(   INT16_32, nreps, start, end, inc);
+    get_perf(    FLOAT64, nreps, 20, 1200, 20);
+    get_perf(    FLOAT32, nreps, 40, 2400, 40);
+    get_perf(    FLOAT16, nreps, 80, 4800, 80);
+    get_perf( FLOAT16_32, nreps, 40, 2400, 40);
+    get_perf(      INT16, nreps, 40, 2400, 40);
+    get_perf(   INT16_32, nreps, 40, 2400, 40);
 
     return 0;
 }
