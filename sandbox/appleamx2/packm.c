@@ -57,8 +57,8 @@ void PACK_FUNC_NAME(ch, a) \
             {  \
                 if ( rs_a == 1 ) \
                 { \
-                    AMX_MEM( LDX, ap    + p_idx*cs_a, 0 ); \
-                    AMX_MEM( LDX, ap+32 + p_idx*cs_a, 1 ); \
+                    AMX_MEM( LDX, ap    + i*rs_a + p_idx*cs_a, 0 ); \
+                    AMX_MEM( LDX, ap+32 + i*rs_a + p_idx*cs_a, 1 ); \
                     AMX_MEM( STX, adest   , 0 ); \
                     AMX_MEM( STX, adest+32, 1 ); \
                     adest += 64; \
@@ -202,7 +202,7 @@ void PACK_FUNC_NAME(ch, b) \
             { \
                 if ( cs_b == 1 ) \
                 { \
-                    AMX_MEM( LDY, bp + p_idx*rs_b, 0 ); \
+                    AMX_MEM( LDY, bp + p_idx*rs_b + j*cs_b, 0 ); \
                     AMX_MEM( STY, bdest, 0 ); \
                     bdest += 32; \
                 } \
