@@ -57,12 +57,12 @@ endif
 ifeq ($(DEBUG_TYPE),noopt)
 COPTFLAGS      := -O0
 else
-COPTFLAGS      := -O2 -mcpu=vortex
+COPTFLAGS      := -O2 -mcpu=apple-m1
 endif
 
 # Flags specific to optimized kernels.
 CKOPTFLAGS     := $(COPTFLAGS) -O3 -ftree-vectorize
-CKVECFLAGS     := -mcpu=vortex
+CKVECFLAGS     := -mcpu=apple-m1
 
 # Flags specific to reference kernels.
 CROPTFLAGS     := $(CKOPTFLAGS)
