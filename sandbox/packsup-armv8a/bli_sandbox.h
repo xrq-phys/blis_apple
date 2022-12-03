@@ -89,8 +89,6 @@ void bls_dgemm
      ukr_dgemm_sup_t  ukr_sup
     );
 
-void dgemm_finalize();
-
 #ifdef __cplusplus
 }
 #endif
