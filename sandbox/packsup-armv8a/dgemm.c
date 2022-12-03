@@ -3,34 +3,10 @@
 #include <assert.h>
 
 
-void *pool = 0;
-int pool_size = 0;
-const int min_pool_size = 8*1024*1024;
-const int align_size = 256;
-
-// Sequential.
-inline void pool_alloc( size_t size )
-{
-    if ( !pool ) {
-        if ( size < min_pool_size )
-            size = min_pool_size;
-        posix_memalign( &pool, align_size, size );
-        pool_size = size;
-    }
-    if ( pool_size < size ) {
-        free( pool );
-        posix_memalign( &pool, align_size, size );
-        pool_size = size;
-    }
-}
-
-void dgemm_finalize()
-{ if ( pool ) free( pool ); pool = 0; pool_size = 0; }
-
-inline void abort_(const char *msg)
+BLIS_INLINE void abort_(const char *msg)
 { fprintf(stderr, "%s\n", msg); abort(); }
 
-inline void assert_(const bool cond, const char *msg)
+BLIS_INLINE void assert_(const bool cond, const char *msg)
 { if (!cond) abort_(msg); }
 
 #define min_(a, b) ( (a) < (b) ? (a) : (b) )
@@ -70,9 +46,13 @@ void bls_dgemm
     // Initialize packing env vars.
     bli_pack_init_rntm_from_env( rntm );
 
-    int b_size = ( nr * num_jr * k * sizeof(double) + align_size - 1 ) / align_size * align_size;
-    int a_size = ( mr * num_ir * k * sizeof(double) + align_size - 1 ) / align_size * align_size;
-    pool_alloc( b_size + a_size );
+    array_t   *array    = bli_sba_checkout_array( 1 );
+    pool_t    *sba_pool = bli_apool_array_elem( 0, array );
+    thrinfo_t *thread   = bli_thrinfo_create_root( &BLIS_SINGLE_COMM, 0, sba_pool, bli_pba_query() );
+
+    int b_size = ( nr * num_jr * k * sizeof(double) + 256 - 1 ) / 256 * 256; // Align to speed up.
+    int a_size = ( mr * num_ir * k * sizeof(double) + 256 - 1 ) / 256 * 256; // Align to speed up.
+    void *pool = bli_packm_alloc_ex( b_size + a_size, BLIS_BUFFER_FOR_B_PANEL, thread );
 
     double *b_panels = pool;
     double *a_panels = pool + b_size;
@@ -239,5 +219,7 @@ void bls_dgemm
         // free( b_panels );
     }
 
+    bli_sba_checkin_array( array );
+    bli_thrinfo_free( thread );
 }
 
