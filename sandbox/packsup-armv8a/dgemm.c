@@ -46,16 +46,19 @@ void bls_dgemm
     // Initialize packing env vars.
     bli_pack_init_rntm_from_env( rntm );
 
-    array_t   *array    = bli_sba_checkout_array( 1 );
-    pool_t    *sba_pool = bli_apool_array_elem( 0, array );
-    thrinfo_t *thread   = bli_thrinfo_create_root( &BLIS_SINGLE_COMM, 0, sba_pool, bli_pba_query() );
+    // For querying BLIS' memory pool.
+    pba_t *pba = bli_pba_query();
+    mem_t  mem_a, mem_b;
 
-    int b_size = ( nr * num_jr * k * sizeof(double) + 256 - 1 ) / 256 * 256; // Align to speed up.
-    int a_size = ( mr * num_ir * k * sizeof(double) + 256 - 1 ) / 256 * 256; // Align to speed up.
-    void *pool = bli_packm_alloc_ex( b_size + a_size, BLIS_BUFFER_FOR_B_PANEL, thread );
+    int b_size = nr * num_jr * k * sizeof( double );
+    int a_size = mr * num_ir * k * sizeof( double );
 
-    double *b_panels = pool;
-    double *a_panels = pool + b_size;
+    // Query the pool for packing space.
+    bli_pba_acquire_m( pba, b_size, BLIS_BUFFER_FOR_B_PANEL, &mem_b );
+    bli_pba_acquire_m( pba, a_size, BLIS_BUFFER_FOR_A_BLOCK, &mem_a );
+
+    double *b_panels = bli_mem_buffer( &mem_b );
+    double *a_panels = bli_mem_buffer( &mem_a );
 
     for ( dim_t jc_offset = 0; jc_offset < n0; jc_offset += nc ) {
         double *b_l3 = b + jc_offset * cs_b;
@@ -219,7 +222,7 @@ void bls_dgemm
         // free( b_panels );
     }
 
-    bli_sba_checkin_array( array );
-    bli_thrinfo_free( thread );
+    bli_pba_release( pba, &mem_b );
+    bli_pba_release( pba, &mem_a );
 }
 
