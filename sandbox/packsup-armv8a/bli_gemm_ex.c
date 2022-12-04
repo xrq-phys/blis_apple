@@ -26,7 +26,7 @@ void bli_gemm_ex
 		return;
 	}
 
-	// When the datatype is elidgible & k is not too small,
+	// When the datatype is elidgible // & k is not too small,
 	// invoke the sandbox method where dgemmsup and dpack interleaves
 	// each other.
 	if ( // ( k > m / 2 || k > n / 2 ) &&
@@ -34,19 +34,8 @@ void bli_gemm_ex
 		bli_obj_dt( b ) == BLIS_DOUBLE &&
 		bli_obj_dt( c ) == BLIS_DOUBLE &&
 		bli_obj_dt( alpha ) == BLIS_DOUBLE &&
-		bli_obj_dt( beta ) == BLIS_DOUBLE &&
-		( ( ( bli_obj_has_notrans( a ) ? // A is column-stored.
-			bli_obj_row_stride( a ) : bli_obj_col_stride( a ) ) == 1  ) ||
-		( ( bli_obj_has_notrans( b ) ? // Or B is row-stored.
-			bli_obj_col_stride( b ) : bli_obj_row_stride( b ) ) == 1 ) ) )
+		bli_obj_dt( beta  ) == BLIS_DOUBLE )
 	{
-		if ( cntx == NULL )
-			cntx = bli_gks_query_cntx();
-
-		// Check the operands.
-		if ( bli_error_checking_is_enabled() )
-			bli_gemm_check( alpha, a, b, beta, c, cntx );
-
 		dim_t k;
 		inc_t rs_a, cs_a, rs_b, cs_b;
 		if ( bli_obj_has_notrans( a ) )
@@ -73,22 +62,33 @@ void bli_gemm_ex
 		}
 
 		rntm_t rntm_l;
-		bls_dgemm
-		(
-			bli_obj_dim( BLIS_M, c ), bli_obj_dim( BLIS_N, c ), k,
-			bli_obj_buffer( alpha ),
-			bli_obj_buffer( a ), rs_a, cs_a,
-			bli_obj_buffer( b ), rs_b, cs_b,
-			bli_obj_buffer( beta ),
-			bli_obj_buffer( c ), bli_obj_row_stride( c ), bli_obj_col_stride( c ),
-			cntx, &rntm_l,
-			bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
-			// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
-			rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
-				bli_dgemmsup2_rv_armv8a_asm_8x6r
-		);
+		if ( rs_a == 1 || cs_b == 1 )
+		{
+			// Query the context for block size & packing kernels.
+			if ( cntx == NULL ) cntx = bli_gks_query_cntx();
 
-		return;
+			// Check the operands.
+			if ( bli_error_checking_is_enabled() )
+				bli_gemm_check( alpha, a, b, beta, c, cntx );
+
+			bls_dgemm
+			(
+				bli_obj_dim( BLIS_M, c ), bli_obj_dim( BLIS_N, c ), k,
+				bli_obj_buffer( alpha ),
+				bli_obj_buffer( a ), rs_a, cs_a,
+				bli_obj_buffer( b ), rs_b, cs_b,
+				bli_obj_buffer( beta ),
+				bli_obj_buffer( c ), bli_obj_row_stride( c ), bli_obj_col_stride( c ),
+				cntx, &rntm_l,
+				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
+				// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
+				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
+					bli_dgemmsup2_rv_armv8a_asm_8x6r
+			);
+			return ;
+		}
+
+		// Otherwise, the program would pop back to the original path of exec.
 	}
 
 	// Initialize a local runtime with global settings if necessary. Note
