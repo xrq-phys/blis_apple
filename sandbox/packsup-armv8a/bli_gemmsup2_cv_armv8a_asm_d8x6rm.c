@@ -116,12 +116,12 @@
  "ld1  {v"#SV2".d}[1], [%[c_ld]], "#CSC"  \n\t" \
   CSCALE_1ROW(DV0,DV1,DV2,SV0,SV1,SV2,VBETA,IDX) \
  "mov  %[c_ld], "#CADDR"  \n\t" \
- "st1  {v"#SV0".d}[0], [%[c_ld]], "#CSC"  \n\t" \
- "st1  {v"#SV0".d}[1], [%[c_ld]], "#CSC"  \n\t" \
- "st1  {v"#SV1".d}[0], [%[c_ld]], "#CSC"  \n\t" \
- "st1  {v"#SV1".d}[1], [%[c_ld]], "#CSC"  \n\t" \
- "st1  {v"#SV2".d}[0], [%[c_ld]], "#CSC"  \n\t" \
- "st1  {v"#SV2".d}[1], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV0".d}[0], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV0".d}[1], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV1".d}[0], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV1".d}[1], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV2".d}[0], [%[c_ld]], "#CSC"  \n\t" \
+ "st1  {v"#DV2".d}[1], [%[c_ld]], "#CSC"  \n\t" \
  "add  "#CADDR", "#CADDR", #8  \n\t"
 
 #define CSTORE_1(SCHEMA,C00,C01,C02,C10,C11,C12,C20,C21,C22,C30,C31,C32,C40,C41,C42,C50,C51,C52,C60,C61,C62,C70,C71,C72,CADDR,LDC,V0,V1,V2,V3,V4,V5,VBETA,IDX) \
