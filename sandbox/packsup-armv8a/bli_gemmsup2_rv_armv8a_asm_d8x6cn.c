@@ -393,6 +393,10 @@ GENDEF(4,nopack,pack)
 GENDEF(5,nopack,pack)
 // GENDECL(6,nopack,pack);
 
+GENDEF(1,nopack,nopack)
+GENDEF(2,nopack,nopack)
+GENDEF(3,nopack,nopack)
+
 #undef GENDEF
 #undef GENDECL
 
@@ -454,9 +458,20 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6c
     // EXPAND_CASE(6)
     EXPAND_CASE(5)
     EXPAND_CASE(4)
-    EXPAND_CASE(3)
-    EXPAND_CASE(2)
-    EXPAND_CASE(1)
+#define EXPAND_CASE2(N) EXPAND_CASE(N) \
+    case ( 0 << 9 | 0 << 8 | N ): \
+        bli_dgemmsup2_rv_armv8a_asm_8x ## N ## c_nopack_nopack \
+            ( m, n, k, \
+              alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, \
+              beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p \
+            ); break;
+    EXPAND_CASE2(3)
+    EXPAND_CASE2(2)
+    EXPAND_CASE2(1)
     default:
         assert( 0 ); break;
     }

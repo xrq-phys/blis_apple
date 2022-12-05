@@ -190,7 +190,7 @@ void bls_dgemm
                     else
                         bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
 
-                    if ( a_uker == a_p && b_uker == b_p )
+                    if ( a_uker == a_p && b_uker == b_p && m_uker + n_uker > mr + nr - 3 )
                         ukr_bulk
                             (
                              m_uker, n_uker, k,

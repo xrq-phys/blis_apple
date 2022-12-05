@@ -401,6 +401,12 @@ GENDEF(6,nopack,pack)
 GENDEF(7,nopack,pack)
 GENDECL(8,nopack,pack);
 
+GENDEF(1,nopack,nopack)
+GENDEF(2,nopack,nopack)
+GENDEF(3,nopack,nopack)
+GENDEF(4,nopack,nopack)
+GENDEF(5,nopack,nopack)
+
 #undef GENDEF
 #undef GENDECL
 
@@ -515,11 +521,24 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
     EXPAND_CASE(8)
     EXPAND_CASE(7)
     EXPAND_CASE(6)
-    EXPAND_CASE(5)
-    EXPAND_CASE(4)
-    EXPAND_CASE(3)
-    EXPAND_CASE(2)
-    EXPAND_CASE(1)
+    // These edge cases are too lossy for bulk kernels.
+    // Prefer sup even when A & B are both packed.
+#define EXPAND_CASE2(M) EXPAND_CASE(M) \
+    case ( 0 << 9 | 0 << 8 | M ): \
+        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_nopack_nopack \
+            ( m, n, k, \
+              alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, \
+              beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p \
+            ); break;
+    EXPAND_CASE2(5)
+    EXPAND_CASE2(4)
+    EXPAND_CASE2(3)
+    EXPAND_CASE2(2)
+    EXPAND_CASE2(1)
     default:
         assert( 0 ); break;
     }
