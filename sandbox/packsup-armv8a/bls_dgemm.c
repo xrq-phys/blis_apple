@@ -36,9 +36,6 @@ void bls_dgemm
     dim_t num_ir = mc / mr;
     dim_t num_jr = nc / nr;
 
-    // Only has *r* kers.
-    // assert( cs_b == 1 );
-
     auxinfo_t data;
     bli_auxinfo_set_next_a( 0, &data );
     bli_auxinfo_set_next_b( 0, &data );
