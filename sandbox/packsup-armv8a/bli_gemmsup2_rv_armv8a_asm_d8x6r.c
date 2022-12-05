@@ -1,5 +1,5 @@
 #include "blis.h"
-#include "assert.h"
+#include <assert.h>
 
 
 // Label locality & misc.

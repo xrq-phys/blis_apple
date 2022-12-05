@@ -1,5 +1,5 @@
 #include "blis.h"
-#include "assert.h"
+#include <assert.h>
 
 
 // Label locality & misc.
@@ -481,10 +481,12 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
         }
     }
 
+#ifdef DEBUG
     assert( m <= 8 );
     assert( rs_a0 == 1 );
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
+#endif
 
     switch ( !!pack_a << 9 | !!pack_b << 8 | m ) {
 #define EXPAND_CASE(M) \
@@ -540,7 +542,10 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
     EXPAND_CASE2(2)
     EXPAND_CASE2(1)
     default:
-        assert( 0 ); break;
+#ifdef DEBUG
+        assert( 0 );
+#endif
+        break;
     }
 }
 

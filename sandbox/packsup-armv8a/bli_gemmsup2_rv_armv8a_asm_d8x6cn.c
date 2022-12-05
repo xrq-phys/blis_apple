@@ -1,4 +1,4 @@
-#include "assert.h"
+#include <assert.h>
 #include "blis.h"
 
 
@@ -417,11 +417,13 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6c
      double *restrict b_p, int pack_b
     )
 {
+#ifdef DEBUG
     assert( m == 8 );
     assert( n <= 6 );
     assert( cs_b0 == 1 );
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
+#endif
 
     switch ( !!pack_a << 9 | !!pack_b << 8 | n ) {
 #define EXPAND_CASE(N) \
@@ -473,6 +475,9 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6c
     EXPAND_CASE2(2)
     EXPAND_CASE2(1)
     default:
-        assert( 0 ); break;
+#ifdef DEBUG
+        assert( 0 );
+#endif
+        break;
     }
 }
