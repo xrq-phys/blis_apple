@@ -99,7 +99,8 @@ void bls_dgemm
                 double *c_l1 = c_l2 + jr * nr * cs_c;
                 double *b_l1 = b_l3 + jr * nr * cs_b;;
                 double *b_p = b_panels + nr * k * jr;
-                dim_t n_uker = min_(n0 - jc_offset - jr * nr, nr);
+                dim_t jr_offset = jc_offset + jr * nr;
+                dim_t n_uker = min_(n0 - jr_offset, nr);
 
                 if ( bli_rntm_pack_b( rntm ) || ic_offset > 0 ) {
                     // Reuse packed b.
@@ -140,7 +141,8 @@ void bls_dgemm
                     double *c_r  = c_l1 + ir * mr * rs_c;
                     double *a_l1 = a_l2 + ir * mr * rs_a;
                     double *a_p = a_panels + mr * k * ir;
-                    dim_t m_uker = min_(m0 - ic_offset - ir * mr, mr);
+                    dim_t ir_offset = ic_offset + ir * mr;
+                    dim_t m_uker = min_(m0 - ir_offset, mr);
 
                     if ( ir > 0 ) {
                         b_uker = b_p;
@@ -159,12 +161,12 @@ void bls_dgemm
                     }
 
                     // Set next_a.
-                    if ( ir + 1 < num_ir ) {
+                    if ( ir + 1 < num_ir && ir_offset + m_uker < m0 ) {
                         if ( jr > 0 ) // Previous jr packed a.
                             bli_auxinfo_set_next_a( a_p + mr * k, &data );
                         else
                             bli_auxinfo_set_next_a( a_l1 + mr * rs_a, &data );
-                    } else if ( jr + 1 < num_jr )
+                    } else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 )
                         // Still using the already-packed a panels.
                         bli_auxinfo_set_next_a( a_panels, &data );
                     else if ( ic_offset + mc < m0 )
@@ -173,10 +175,10 @@ void bls_dgemm
                         bli_auxinfo_set_next_a( a, &data );
 
                     // Set next_b
-                    if ( ir + 1 < num_ir )
+                    if ( ir + 1 < num_ir && ir_offset + m_uker < m0 )
                         // Next b must be next same jr & packed by this / some previous uker call.
                         bli_auxinfo_set_next_b( b_p, &data );
-                    else if ( jr + 1 < num_jr ) {
+                    else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
                         if ( ic_offset > 0 ) // Previous ic has packed b for the next jr.
                             bli_auxinfo_set_next_b( b_p + nr * k, &data );
                         else
@@ -210,8 +212,8 @@ void bls_dgemm
                              beta,
                              c_r, rs_c, cs_c,
                              &data, cntx,
-                             a_p, a_uker != a_p,
-                             b_p, b_uker != b_p
+                             a_p, a_uker != a_p && jr_offset + n_uker < n0,
+                             b_p, b_uker != b_p && ir_offset + m_uker < m0
                             );
                 }
             }
