@@ -351,19 +351,19 @@ LABEL(DEND_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 \
 }
 
-GENDEF(1,pack,pack)
-GENDEF(2,pack,pack)
-GENDEF(3,pack,pack)
-GENDEF(4,pack,pack)
-GENDEF(5,pack,pack)
-// GENDECL(6,pack,pack);
+// GENDEF(1,pack,pack)
+// GENDEF(2,pack,pack)
+// GENDEF(3,pack,pack)
+// GENDEF(4,pack,pack)
+// GENDEF(5,pack,pack)
+// // GENDECL(6,pack,pack);
 
-GENDEF(1,pack,nopack)
-GENDEF(2,pack,nopack)
-GENDEF(3,pack,nopack)
-GENDEF(4,pack,nopack)
-GENDEF(5,pack,nopack)
-// GENDECL(6,pack,nopack);
+// GENDEF(1,pack,nopack)
+// GENDEF(2,pack,nopack)
+// GENDEF(3,pack,nopack)
+// GENDEF(4,pack,nopack)
+// GENDEF(5,pack,nopack)
+// // GENDECL(6,pack,nopack);
 
 GENDEF(1,nopack,pack)
 GENDEF(2,nopack,pack)
@@ -408,28 +408,10 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6c
 #endif
 
     switch ( !!pack_a << 9 | !!pack_b << 8 | n ) {
+    // Final column-block. A tiles'll never be reused.
 #define EXPAND_CASE(N) \
-    case ( 1 << 9 | 1 << 8 | N ): \
-        bli_dgemmsup2_cv_armv8a_asm_8x ## N ## c_pack_pack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break; \
-    case ( 1 << 9 | 0 << 8 | N ): \
-        bli_dgemmsup2_cv_armv8a_asm_8x ## N ## c_pack_nopack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break; \
     case ( 0 << 9 | 1 << 8 | N ): \
+    case ( 1 << 9 | 1 << 8 | N ): \
         bli_dgemmsup2_cv_armv8a_asm_8x ## N ## c_nopack_pack \
             ( m, n, k, \
               alpha, \
@@ -440,6 +422,7 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6c
               data, cntx, a_p, b_p \
             ); break; \
     case ( 0 << 9 | 0 << 8 | N ): \
+    case ( 1 << 9 | 0 << 8 | N ): \
         bli_dgemmsup2_cv_armv8a_asm_8x ## N ## c_nopack_nopack \
             ( m, n, k, \
               alpha, \
@@ -449,7 +432,7 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6c
               c, rs_c0, cs_c0, \
               data, cntx, a_p, b_p \
             ); break;
-    // EXPAND_CASE(6)
+    // EXPAND_CASE(6) // Forbidden w/o _pack_* case instantiation.
     EXPAND_CASE(5)
     EXPAND_CASE(4)
     EXPAND_CASE(3)

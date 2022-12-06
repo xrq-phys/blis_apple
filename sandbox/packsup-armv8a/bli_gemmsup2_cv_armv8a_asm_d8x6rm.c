@@ -374,13 +374,13 @@ LABEL(DEND_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 \
 }
 
-GENDEF(1,pack,pack)
-GENDEF(2,pack,pack)
-GENDEF(3,pack,pack)
-GENDEF(4,pack,pack)
-GENDEF(5,pack,pack)
-GENDEF(6,pack,pack)
-GENDEF(7,pack,pack)
+// GENDEF(1,pack,pack)
+// GENDEF(2,pack,pack)
+// GENDEF(3,pack,pack)
+// GENDEF(4,pack,pack)
+// GENDEF(5,pack,pack)
+// GENDEF(6,pack,pack)
+// GENDEF(7,pack,pack)
 GENDECL(8,pack,pack);
 
 GENDEF(1,pack,nopack)
@@ -392,13 +392,13 @@ GENDEF(6,pack,nopack)
 GENDEF(7,pack,nopack)
 GENDECL(8,pack,nopack);
 
-GENDEF(1,nopack,pack)
-GENDEF(2,nopack,pack)
-GENDEF(3,nopack,pack)
-GENDEF(4,nopack,pack)
-GENDEF(5,nopack,pack)
-GENDEF(6,nopack,pack)
-GENDEF(7,nopack,pack)
+// GENDEF(1,nopack,pack)
+// GENDEF(2,nopack,pack)
+// GENDEF(3,nopack,pack)
+// GENDEF(4,nopack,pack)
+// GENDEF(5,nopack,pack)
+// GENDEF(6,nopack,pack)
+// GENDEF(7,nopack,pack)
 GENDECL(8,nopack,pack);
 
 GENDEF(1,nopack,nopack)
@@ -406,6 +406,8 @@ GENDEF(2,nopack,nopack)
 GENDEF(3,nopack,nopack)
 GENDEF(4,nopack,nopack)
 GENDEF(5,nopack,nopack)
+GENDEF(6,nopack,nopack)
+GENDEF(7,nopack,nopack)
 
 #undef GENDEF
 #undef GENDECL
@@ -489,53 +491,31 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
 #endif
 
     switch ( !!pack_a << 9 | !!pack_b << 8 | m ) {
-#define EXPAND_CASE(M) \
+#define EXPAND_CASE_BASE( M, PA, PB, PACKA, PACKB ) \
+    case ( PA << 9 | PB << 8 | M ): \
+        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_## PACKA ##_## PACKB \
+            ( m, n, k, \
+              alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, \
+              beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p \
+            ); break;
+#define EXPAND_CASE1( M ) \
+      EXPAND_CASE_BASE( M, 1, 1, pack, pack ) \
+      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
+      EXPAND_CASE_BASE( M, 0, 1, nopack, pack )
+
+    // Final row-block. B tiles'll never be reused.
+#define EXPAND_CASE2( M ) \
     case ( 1 << 9 | 1 << 8 | M ): \
-        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_pack_pack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break; \
-    case ( 1 << 9 | 0 << 8 | M ): \
-        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_pack_nopack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break; \
+      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
     case ( 0 << 9 | 1 << 8 | M ): \
-        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_nopack_pack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break;
-    EXPAND_CASE(8)
-    EXPAND_CASE(7)
-    EXPAND_CASE(6)
-    // These edge cases are too lossy for bulk kernels.
-    // Prefer sup even when A & B are both packed.
-#define EXPAND_CASE2(M) EXPAND_CASE(M) \
-    case ( 0 << 9 | 0 << 8 | M ): \
-        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_nopack_nopack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break;
+      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
+    EXPAND_CASE1(8)
+    EXPAND_CASE2(7)
+    EXPAND_CASE2(6)
     EXPAND_CASE2(5)
     EXPAND_CASE2(4)
     EXPAND_CASE2(3)

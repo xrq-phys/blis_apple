@@ -187,7 +187,10 @@ void bls_dgemm
                     else
                         bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
 
-                    if ( a_uker == a_p && b_uker == b_p && m_uker + n_uker > mr + nr - 3 )
+                    if ( a_uker == a_p && b_uker == b_p &&
+                         // Some edge cases are too lossy for bulk kernels.
+                         // Prefer sup even when A & B are both packed.
+                         m_uker + n_uker > mr + nr - 3 )
                         ukr_bulk
                             (
                              m_uker, n_uker, k,
