@@ -1,3 +1,5 @@
+#if defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+
 #include "blis.h"
 #include <assert.h>
 
@@ -563,4 +565,6 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6r
         break;
     }
 }
+
+#endif
 

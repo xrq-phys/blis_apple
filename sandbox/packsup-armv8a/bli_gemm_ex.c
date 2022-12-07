@@ -1,4 +1,5 @@
 #include "blis.h"
+#include <assert.h>
 
 void bli_gemm_ex
      (
@@ -80,10 +81,19 @@ void bli_gemm_ex
 				bli_obj_buffer( beta ),
 				bli_obj_buffer( c ), bli_obj_row_stride( c ), bli_obj_col_stride( c ),
 				cntx, &rntm_l,
-				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
 				// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+				bli_dgemm_haswell_asm_6x8, // Don't query. 8x6 would not work.
+				// rs_a == 1 ? bli_dgemmsup2_cv_haswell_asm_6x8r :
+					( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8r )
+#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
 				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
 					bli_dgemmsup2_rv_armv8a_asm_8x6r
+#else
+				// TODO: Use reference kernels.
+#error "This architecture is not supported yet."
+#endif
 			);
 			return ;
 		}
