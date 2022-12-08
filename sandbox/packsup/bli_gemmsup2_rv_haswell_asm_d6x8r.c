@@ -191,6 +191,8 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
 \
     mov(var(alpha), rax) \
     mov(var(beta), rbx) \
+    mov(var(a_next), rcx) \
+    mov(var(b_next), rdx) \
     vbroadcastsd(mem(rax), ymm0) \
     vbroadcastsd(mem(rbx), ymm3) \
 \
@@ -206,6 +208,14 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
         vmulpd(ymm0, ymm13, ymm13) \
         vmulpd(ymm0, ymm14, ymm14) \
         vmulpd(ymm0, ymm15, ymm15) \
+\
+        prefetch(0, mem(rcx)) \
+        /* prefetch(0, mem(rcx, 1*64)) \
+         * prefetch(0, mem(rcx, 2*64)) */ \
+        prefetch(0, mem(rdx)) \
+        /* prefetch(0, mem(rdx, 1*64)) \
+         * prefetch(0, mem(rdx, 2*64)) \
+         * prefetch(0, mem(rdx, 3*64)) */ \
 \
     mov(var(c), rcx) /* load c */ \
     mov(var(rs_c), rdi) /* load rs_c */ \
@@ -318,8 +328,8 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
       [k_left] "m" (k_left), \
       [alpha]  "m" (alpha), \
       [beta]   "m" (beta), \
-      /* [a_next] "m" (a_next),
-       * [b_next] "m" (b_next), */ \
+      [a_next] "m" (a_next), \
+      [b_next] "m" (b_next), \
       [a_p]    "m" (a_p), \
       [b_p]    "m" (b_p) \
     : "rax", "rbx", "rcx", "rdx", "rsi", "rdi", \
