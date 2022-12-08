@@ -17,27 +17,27 @@
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
     INST (ymm(A0_), B0, C00) \
     INST (ymm(A0_), B1, C01) \
-    PACK_ ##PACKA (movsd(xmm(A0_), mem(PAADDR))) \
+    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
     INST (ymm(A1_), B0, C10) \
     INST (ymm(A1_), B1, C11) \
-    PACK_ ##PACKA (movsd(xmm(A1_), mem(PAADDR, 1*8))) \
+    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR))) \
     vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA3,1), ymm(A1_)) \
     INST (ymm(A0_), B0, C20) \
     INST (ymm(A0_), B1, C21) \
-    PACK_ ##PACKA (movsd(xmm(A0_), mem(PAADDR, 2*8))) \
+    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
     INST (ymm(A1_), B0, C30) \
     INST (ymm(A1_), B1, C31) \
-    PACK_ ##PACKA (movsd(xmm(A1_), mem(PAADDR, 3*8))) \
+    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 2*8))) \
     vbroadcastsd(mem(AADDR, RSA, 4), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA5,1), ymm(A1_)) \
     add(CSA, AADDR) \
     INST (ymm(A0_), B0, C40) \
     INST (ymm(A0_), B1, C41) \
-    PACK_ ##PACKA (movsd(xmm(A0_), mem(PAADDR, 4*8))) \
+    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
     INST (ymm(A1_), B0, C50) \
     INST (ymm(A1_), B1, C51) \
-    PACK_ ##PACKA (movsd(xmm(A1_), mem(PAADDR, 5*8))) \
+    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 4*8))) \
     PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
     PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
