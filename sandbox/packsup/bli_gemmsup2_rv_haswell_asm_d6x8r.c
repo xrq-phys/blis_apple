@@ -126,6 +126,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     begin_asm() \
 \
     mov(var(k_mker), rsi) \
+    mov(var(k_left), r14) \
     mov(var(a), rax) \
     mov(var(b), rbx) \
     mov(var(a_p), rcx) \
@@ -142,7 +143,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     /* TODO: Prefetch C. */ \
 \
     test(rsi, rsi) \
-    je(.DK_LEFT_LOOP_INIT) \
+    je(.DEMPTYALL) \
 \
     label(.DK_4LOOP_INIT) \
         /* TODO: Prefetch A/B. */ \
@@ -165,27 +166,17 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     jne(.DK_4LOOP) \
 \
     label(.DK_LEFT_LOOP_PREP) \
-    mov(var(k_left), rsi) \
-    test(rsi, rsi) \
+    test(r14, r14) \
     je(.DWRITEMEM_PREP) \
     jmp(.DK_LEFT_LOOP) \
 \
-    label(.DK_LEFT_LOOP_INIT) \
-    mov(var(k_left), rsi) \
-    test(rsi, rsi) \
-    je(.DEMPTYALL) \
-        DGEMM_6X8_NANOKER_LOC(vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
-        dec(rsi) \
-    je(.DWRITEMEM_PREP) \
+    label(.DEMPTYALL) \
+        vzeroall() \
 \
     label(.DK_LEFT_LOOP) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
-        dec(rsi) \
+        dec(r14) \
     jne(.DK_LEFT_LOOP) \
-    jmp(.DWRITEMEM_PREP) \
-\
-    label(.DEMPTYALL) \
-        vzeroall() \
 \
     label(.DWRITEMEM_PREP) \
 \
