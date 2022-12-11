@@ -142,6 +142,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     lea(mem(r13, rdi, 2), r15) /* r15 = 5*rs_a; */ \
     mov(var(a_next), r8) \
     mov(var(cs_a2), r9) /* r9 = cs_a_next; */ \
+    lea(mem(, r9, 8), r9) /* cs_a_next *= sizeof(double) */ \
     lea(mem(r9, r9, 2), r12) /* r12 = 3*cs_a_next; */ \
 \
     /* TODO: Prefetch C. */ \
