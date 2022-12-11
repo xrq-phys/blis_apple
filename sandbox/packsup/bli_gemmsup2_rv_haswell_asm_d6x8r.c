@@ -112,6 +112,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
 { \
     const void* a_next = bli_auxinfo_next_a( data ); \
     const void* b_next = bli_auxinfo_next_b( data ); \
+    uint64_t cs_a_next = bli_auxinfo_ps_a( data ); /* Borrow the space. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
     * different size than is expected by load instructions. */ \
@@ -139,6 +140,9 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     lea(mem(, r11, 8), r11) /* rs_b *= sizeof(double) */ \
     lea(mem(rdi, rdi, 2), r13) /* r13 = 3*rs_a; */ \
     lea(mem(r13, rdi, 2), r15) /* r15 = 5*rs_a; */ \
+    mov(var(a_next), r8) \
+    mov(var(cs_a2), r9) /* r9 = cs_a_next; */ \
+    lea(mem(r9, r9, 2), r12) /* r12 = 3*cs_a_next; */ \
 \
     /* TODO: Prefetch C. */ \
 \
@@ -146,21 +150,27 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     je(.DEMPTYALL) \
 \
     label(.DK_4LOOP_INIT) \
-        /* TODO: Prefetch A/B. */ \
-\
+        prefetch(0, mem(r8, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r9, 1, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r9, 2, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r12, 1, 5*8)) \
+        lea(mem(r8, r9, 4), r8) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
         dec(rsi) \
     je(.DK_LEFT_LOOP_PREP) \
 \
     label(.DK_4LOOP) \
-        /* TODO: Prefetch A/B. */ \
-\
+        prefetch(0, mem(r8, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r9, 1, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r9, 2, 5*8)) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        prefetch(0, mem(r8, r12, 1, 5*8)) \
+        lea(mem(r8, r9, 4), r8) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
         dec(rsi) \
     jne(.DK_4LOOP) \
@@ -174,6 +184,8 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
         vzeroall() \
 \
     label(.DK_LEFT_LOOP) \
+        prefetch(0, mem(r8, 5*8)) \
+        add(r9, r8) \
         DGEMM_6X8_NANOKER_LOC(vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
         dec(r14) \
     jne(.DK_LEFT_LOOP) \
@@ -182,7 +194,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
 \
     mov(var(alpha), rax) \
     mov(var(beta), rbx) \
-    mov(var(a_next), rcx) \
+    /* mov(var(a_next), rcx) */ \
     mov(var(b_next), rdx) \
     vbroadcastsd(mem(rax), ymm0) \
     vbroadcastsd(mem(rbx), ymm3) \
@@ -200,7 +212,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
         vmulpd(ymm0, ymm14, ymm14) \
         vmulpd(ymm0, ymm15, ymm15) \
 \
-        prefetch(0, mem(rcx)) \
+        /* prefetch(0, mem(rcx)) */ \
         /* prefetch(0, mem(rcx, 1*64)) \
          * prefetch(0, mem(rcx, 2*64)) */ \
         prefetch(0, mem(rdx)) \
@@ -310,6 +322,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
       [a]      "m" (a), \
       [rs_a]   "m" (rs_a), \
       [cs_a]   "m" (cs_a), \
+      [cs_a2]  "m" (cs_a_next), \
       [b]      "m" (b), \
       [rs_b]   "m" (rs_b), \
       [c]      "m" (c), \

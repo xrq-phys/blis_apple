@@ -162,17 +162,24 @@ void bls_dgemm
 
                     // Set next_a.
                     if ( ir + 1 < num_ir && ir_offset + m_uker < m0 ) {
-                        if ( jr > 0 ) // Previous jr packed a.
+                        if ( jr > 0 ) { // Previous jr packed a.
                             bli_auxinfo_set_next_a( a_p + mr * k, &data );
-                        else
+                            bli_auxinfo_set_ps_a( mr, &data ); // In fact, cs_a_next.
+                        } else {
                             bli_auxinfo_set_next_a( a_l1 + mr * rs_a, &data );
-                    } else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 )
+                            bli_auxinfo_set_ps_a( cs_a, &data ); // cs_a_next.
+                        }
+                    } else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
                         // Still using the already-packed a panels.
                         bli_auxinfo_set_next_a( a_panels, &data );
-                    else if ( ic_offset + mc < m0 )
-                        bli_auxinfo_set_next_a( a_l2 + mc * rs_a, &data );
-                    else
-                        bli_auxinfo_set_next_a( a, &data );
+                        bli_auxinfo_set_ps_a( mr, &data ); // cs_a_next.
+                    } else {
+                        bli_auxinfo_set_ps_a( cs_a, &data ); // cs_a_next.
+                        if ( ic_offset + mc < m0 )
+                            bli_auxinfo_set_next_a( a_l2 + mc * rs_a, &data );
+                        else
+                            bli_auxinfo_set_next_a( a, &data );
+                    }
 
                     // Set next_b
                     if ( ir + 1 < num_ir && ir_offset + m_uker < m0 )
