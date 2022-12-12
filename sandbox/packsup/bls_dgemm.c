@@ -188,7 +188,10 @@ void bls_dgemm
                             if ( ic_offset + mc < m0 )
                                 bli_auxinfo_set_next_a( a_l2 + mc * rs_a, &data );
                             else
-                                bli_auxinfo_set_next_a( a, &data );
+                                if ( lc_offset + kc < k0 )
+                                    bli_auxinfo_set_next_a( a_l3 + kc * cs_a, &data );
+                                else
+                                    bli_auxinfo_set_next_a( a, &data );
                         }
 
                         // Set next_b
@@ -204,7 +207,10 @@ void bls_dgemm
                             // Return jr.
                             bli_auxinfo_set_next_b( b_panels, &data );
                         else
-                            bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
+                            if ( lc_offset + kc < k0 )
+                                bli_auxinfo_set_next_b( b_l3 + kc * rs_b, &data );
+                            else
+                                bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
 
                         if ( a_uker == a_p && b_uker == b_p &&
                              // Some edge cases are too lossy for bulk kernels.
