@@ -458,6 +458,7 @@ LABEL(DEND_WRITE_MEM_ ## PACKA ## _ ## PACKB) \
 GENDEF(pack,pack)
 GENDEF(pack,nopack)
 GENDEF(nopack,pack)
+GENDEF(nopack,nopack)
 #undef GENDEF
 
 #if 0

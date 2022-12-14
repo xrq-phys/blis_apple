@@ -410,6 +410,7 @@ GENDEF(4,nopack,nopack)
 GENDEF(5,nopack,nopack)
 GENDEF(6,nopack,nopack)
 GENDEF(7,nopack,nopack)
+GENDECL(8,nopack,nopack);
 
 #undef GENDEF
 #undef GENDECL
@@ -507,7 +508,8 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
 #define EXPAND_CASE1( M ) \
       EXPAND_CASE_BASE( M, 1, 1, pack, pack ) \
       EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
-      EXPAND_CASE_BASE( M, 0, 1, nopack, pack )
+      EXPAND_CASE_BASE( M, 0, 1, nopack, pack ) \
+      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
 
     // Final row-block. B tiles'll never be reused.
 #define EXPAND_CASE2( M ) \
