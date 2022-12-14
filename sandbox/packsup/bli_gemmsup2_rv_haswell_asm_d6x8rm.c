@@ -407,7 +407,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
     if ( m < 6 && cs_c0 != 1 )
     {
         for ( dim_t j = 0; j < 8; ++j )
-            for ( dim_t i = 0; i < 6; ++i )
+            for ( dim_t i = 0; i < m; ++i )
                 c0[i * rs_c0 + j * cs_c0] =
                     c0[i * rs_c0 + j * cs_c0] * *beta0 + ct[i * 8 + j];
     }
