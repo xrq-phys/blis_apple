@@ -510,6 +510,7 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
       EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
       EXPAND_CASE_BASE( M, 0, 1, nopack, pack ) \
       EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
+    EXPAND_CASE1(8)
 
     // Final row-block. B tiles'll never be reused.
 #define EXPAND_CASE2( M ) \
@@ -517,7 +518,6 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
       EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
     case ( 0 << 9 | 1 << 8 | M ): \
       EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
-    EXPAND_CASE1(8)
     EXPAND_CASE2(7)
     EXPAND_CASE2(6)
     EXPAND_CASE2(5)
@@ -525,6 +525,7 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
     EXPAND_CASE2(3)
     EXPAND_CASE2(2)
     EXPAND_CASE2(1)
+
     default:
 #ifdef DEBUG
         assert( 0 );
