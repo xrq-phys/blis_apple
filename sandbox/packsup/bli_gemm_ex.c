@@ -37,8 +37,33 @@ void bli_gemm_ex
 		bli_obj_dt( alpha ) == BLIS_DOUBLE &&
 		bli_obj_dt( beta  ) == BLIS_DOUBLE )
 	{
-		dim_t k;
-		inc_t rs_a, cs_a, rs_b, cs_b;
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+		// AVX2 has no column-6x8 kernel. Detect column-storage and transpose.
+		if ( ( bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b ) ) != 1 )
+#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+		/* TODO: For Arm, detect small-m and transpose into small-n?
+		if ( bli_obj_has_notrans( c ) ?
+			bli_obj_dim( BLIS_M, c ) + 8 < bli_obj_dim( BLIS_N, c ) :
+			bli_obj_dim( BLIS_N, c ) + 8 < bli_obj_dim( BLIS_M, c ) ) */
+		if ( false )
+#else
+		if ( false )
+#endif
+		{
+			// Call C' += B'A' <=> C += A B.
+			obj_t at, bt, ct;
+			bli_obj_alias_to( a, &at );
+			bli_obj_alias_to( b, &bt );
+			bli_obj_alias_to( c, &ct );
+			bli_obj_toggle_trans( &at );
+			bli_obj_toggle_trans( &bt );
+			bli_obj_toggle_trans( &ct );
+			bli_gemm_ex ( alpha, &bt, &at, beta, &ct, cntx, rntm );
+			return ;
+		}
+
+		dim_t m, n, k;
+		inc_t rs_a, cs_a, rs_b, cs_b, rs_c, cs_c;
 		if ( bli_obj_has_notrans( a ) )
 		{
 			k = bli_obj_dim( BLIS_N, a );
@@ -61,6 +86,20 @@ void bli_gemm_ex
 			rs_b = bli_obj_col_stride( b );
 			cs_b = bli_obj_row_stride( b );
 		}
+		if ( bli_obj_has_notrans( c ) )
+		{
+			m = bli_obj_dim( BLIS_M, c );
+			n = bli_obj_dim( BLIS_N, c );
+			rs_c = bli_obj_row_stride( c );
+			cs_c = bli_obj_col_stride( c );
+		}
+		else
+		{
+			m = bli_obj_dim( BLIS_N, c );
+			n = bli_obj_dim( BLIS_M, c );
+			rs_c = bli_obj_col_stride( c );
+			cs_c = bli_obj_row_stride( c );
+		}
 
 		rntm_t rntm_l;
 		if ( rs_a == 1 || cs_b == 1 )
@@ -74,18 +113,17 @@ void bli_gemm_ex
 
 			bls_dgemm
 			(
-				bli_obj_dim( BLIS_M, c ), bli_obj_dim( BLIS_N, c ), k,
+				m, n, k,
 				bli_obj_buffer( alpha ),
 				bli_obj_buffer( a ), rs_a, cs_a,
 				bli_obj_buffer( b ), rs_b, cs_b,
 				bli_obj_buffer( beta ),
-				bli_obj_buffer( c ), bli_obj_row_stride( c ), bli_obj_col_stride( c ),
+				bli_obj_buffer( c ), rs_c, cs_c,
 				cntx, &rntm_l,
 				// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 				bli_dgemm_haswell_asm_6x8, // Don't query. 8x6 would not work.
-				// rs_a == 1 ? bli_dgemmsup2_cv_haswell_asm_6x8r :
-					( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8r )
+				( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8r )
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
 				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
 				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
