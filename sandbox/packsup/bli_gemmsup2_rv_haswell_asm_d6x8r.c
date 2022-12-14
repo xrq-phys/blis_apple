@@ -12,7 +12,6 @@
     vmovupd(mem(BADDR    ), B0) \
     vmovupd(mem(BADDR, 32), B1) \
     add(RSB, BADDR) \
-    /* TODO: Prefetch */ \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
     INST (ymm(A0_), B0, C00) \
@@ -355,7 +354,7 @@ GENDEF(nopack,nopack)
 #undef GENDEF
 
 
-#if 1
+#if 0
 void bli_dgemmsup2_rv_haswell_asm_6x8r
     (
      dim_t            m,
