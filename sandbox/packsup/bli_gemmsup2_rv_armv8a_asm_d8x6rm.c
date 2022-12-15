@@ -492,16 +492,17 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6r
             // Caller ensures p_a has enough space. Now do the packing.
             l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx );
 
-            dpackm
-                ( BLIS_NO_CONJUGATE, BLIS_PACKED_ROWS, 
-                  n, k, k,
-                  alpha,
-                  b, cs_b0, rs_b0,
-                  b_p, 6,
-                  cntx );
+            if ( b != b_p )
+                dpackm
+                    ( BLIS_NO_CONJUGATE, BLIS_PACKED_ROWS, 
+                      n, k, k,
+                      &one,
+                      b, cs_b0, rs_b0,
+                      b_p, 6,
+                      cntx );
 
             bli_dgemmsup2_rv_armv8a_asm_8x6r
-                ( m, 6, k, &one,
+                ( m, 6, k, alpha,
                   a, rs_a0, cs_a0,
                   b_p, 6, 1, &zero,
                   c_t, 6, 1,
