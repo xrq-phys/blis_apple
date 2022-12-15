@@ -32,6 +32,7 @@ void bls_dgemm
     const dim_t kc = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_KC, cntx );
     const dim_t mr = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MR, cntx );
     const dim_t nr = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_NR, cntx );
+    const dim_t kc_max = kc + 47;
     assert_( !(mc % mr), "MC not multiple of MR." );
     assert_( !(nc % nr), "NC not multiple of NR." );
     dim_t num_ir = mc / mr;
@@ -48,8 +49,8 @@ void bls_dgemm
     pba_t *pba = bli_pba_query();
     mem_t  mem_a, mem_b;
 
-    int b_size = nr * num_jr * kc * sizeof( double );
-    int a_size = mr * num_ir * kc * sizeof( double );
+    int b_size = nr * num_jr * kc_max * sizeof( double );
+    int a_size = mr * num_ir * kc_max * sizeof( double );
 
     // Query the pool for packing space.
     bli_pba_acquire_m( pba, b_size, BLIS_BUFFER_FOR_B_PANEL, &mem_b );
@@ -67,10 +68,10 @@ void bls_dgemm
         double *alpha = alpha0;
         double *beta  = beta0;
 
-        for ( dim_t lc_offset = 0; lc_offset < k0; lc_offset += kc ) {
+        for ( dim_t lc_offset = 0; lc_offset < k0; /* lc_offset += k_uker. */ ) {
             double *a_l3 = a    + lc_offset * cs_a;
             double *b_l3 = b_l4 + lc_offset * rs_b;
-            dim_t k_uker = min_(k0 - lc_offset, kc);
+            dim_t k_uker = k0 - lc_offset < kc_max ? k0 - lc_offset : kc;
             // Determine whether to use k_uker * ?r or kc * ?r as the packing stride.
             // On CPU basically k_uker * ?r is better since it ensures equential HW prefetching.
             dim_t k_ps = k_uker;
@@ -242,6 +243,7 @@ void bls_dgemm
                 }
             }
             beta = &one;
+            lc_offset += k_uker;
         }
     }
 
