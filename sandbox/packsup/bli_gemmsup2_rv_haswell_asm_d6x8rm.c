@@ -328,11 +328,11 @@ GENDECL(6,nopack,nopack);
 void bli_dgemmsup2_rv_haswell_asm_6x8r
     (
      dim_t            m,
-     dim_t            n,
+     dim_t            n0,
      dim_t            k,
      double *restrict alpha,
-     double *restrict a, inc_t rs_a0, inc_t cs_a0,
-     double *restrict b, inc_t rs_b0, inc_t cs_b0,
+     double *restrict a, inc_t rs_a, inc_t cs_a,
+     double *restrict b, inc_t rs_b, inc_t cs_b,
      double *restrict beta0,
      double *restrict c0, inc_t rs_c0, inc_t cs_c0,
      auxinfo_t       *data,
@@ -341,17 +341,53 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
      double *restrict b_p, int pack_b
     )
 {
+    bool use_ct = false;
+    dim_t n = n0;
+    if ( n0 < 8 )
+    {
+        // if ( m == 6 )
+        // {
+        //     // TODO: 6xN kernel.
+        //     return ;
+        // }
+        // else
+        {
+            double one = 1.0;
+            // Caller ensures p_a has enough space. Now do the packing.
+            l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx );
+
+            if ( b != b_p )
+                dpackm
+                    ( BLIS_NO_CONJUGATE, BLIS_PACKED_ROWS, 
+                      n0, k, k,
+                      &one,
+                      b, cs_b, rs_b,
+                      b_p, 8,
+                      cntx );
+
+            n = 8;
+            b = b_p;
+            rs_b = 8;
+            cs_b = 1;
+            pack_b = false;
+            use_ct = true;
+        }
+    }
+    if ( cs_c0 != 1 && m < 6 )
+        use_ct = true;
+
 #if DEBUG
     assert( n == 8 );
-    assert( cs_b0 == 1 );
+    assert( cs_b == 1 );
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
 #endif
+    // Process CT scratch space.
     static double ct[6 * 8];
-    static double zero = 1.0;
+    double zero = 0.0;
     double *c; inc_t rs_c, cs_c;
     double *beta;
-    if ( m < 6 && cs_c0 != 1 )
+    if ( use_ct )
     {
         c = ct;
         rs_c = 8;
@@ -372,8 +408,8 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
         bli_dgemmsup2_rv_haswell_asm_ ## M ## x8r_## PACKA ##_## PACKB \
             ( m, n, k, \
               alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
+              a, rs_a, cs_a, \
+              b, rs_b, cs_b, \
               beta, \
               c, rs_c, cs_c, \
               data, cntx, a_p, b_p \
@@ -404,9 +440,9 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
         break;
     }
 
-    if ( m < 6 && cs_c0 != 1 )
+    if ( c == ct )
     {
-        for ( dim_t j = 0; j < 8; ++j )
+        for ( dim_t j = 0; j < n0; ++j )
             for ( dim_t i = 0; i < m; ++i )
                 c0[i * rs_c0 + j * cs_c0] =
                     c0[i * rs_c0 + j * cs_c0] * *beta0 + ct[i * 8 + j];
