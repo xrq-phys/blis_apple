@@ -150,7 +150,7 @@ void bli_dgemmsup2_rv_haswell_asm_## M ##x8r_ ## PACKA ## _ ## PACKB \
     uint64_t cs_a_next = bli_auxinfo_ps_a( data ); /* Borrow the space. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
-    * different size than is expected by load instructions. */ \
+     * different size than is expected by load instructions. */ \
     uint64_t k_mker = k / 4; \
     uint64_t k_left = k % 4; \
     uint64_t rs_a   = rs_a0; \
@@ -345,12 +345,21 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
     dim_t n = n0;
     if ( n0 < 8 )
     {
-        // if ( m == 6 )
-        // {
-        //     // TODO: 6xN kernel.
-        //     return ;
-        // }
-        // else
+        if ( m == 6 )
+        {
+            bli_dgemmsup2_rv_haswell_asm_6x8rn
+                ( m, n0, k,
+                  alpha,
+                  a, rs_a, cs_a,
+                  b, rs_b, cs_b,
+                  beta0,
+                  c0, rs_c0, cs_c0,
+                  data, cntx,
+                  a_p, pack_a,
+                  b_p, pack_b );
+            return ;
+        }
+        else
         {
             double one = 1.0;
             // Caller ensures p_a has enough space. Now do the packing.

@@ -21,6 +21,22 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
      double *restrict b_p, int pack_b
     );
 
+void bli_dgemmsup2_rv_haswell_asm_6x8rn
+    (
+     dim_t            m,
+     dim_t            n,
+     dim_t            k,
+     double *restrict alpha,
+     double *restrict a, inc_t rs_a0, inc_t cs_a0,
+     double *restrict b, inc_t rs_b0, inc_t cs_b0,
+     double *restrict beta,
+     double *restrict c, inc_t rs_c0, inc_t cs_c0,
+     auxinfo_t       *data,
+     cntx_t          *cntx,
+     double *restrict a_p, int pack_a,
+     double *restrict b_p, int pack_b
+    );
+
 void bli_dgemmsup2_rv_armv8a_asm_8x6r
     (
      dim_t            m,

@@ -114,7 +114,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r_ ## PACKA ## _ ## PACKB \
     uint64_t cs_a_next = bli_auxinfo_ps_a( data ); /* Borrow the space. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
-    * different size than is expected by load instructions. */ \
+     * different size than is expected by load instructions. */ \
     uint64_t k_mker = k / 4; \
     uint64_t k_left = k % 4; \
     uint64_t rs_a   = rs_a0; \
