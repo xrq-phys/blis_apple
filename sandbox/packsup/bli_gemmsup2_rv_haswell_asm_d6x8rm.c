@@ -573,7 +573,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
             use_ct = true;
         }
     }
-#if DEBUG
+#ifdef DEBUG
     assert( n == 8 );
     assert( cs_b == 1 );
     assert( rs_c0 == 1 ||

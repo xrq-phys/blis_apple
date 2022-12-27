@@ -549,11 +549,11 @@ void bli_dgemmsup2_rv_haswell_asm_6x8rn
      double *restrict b_p, int pack_b
     )
 {
-#if DEBUG
+#ifdef DEBUG
     assert( m == 6 );
     assert( cs_b == 1 );
-    assert( rs_c0 == 1 ||
-            cs_c0 == 1 );
+    assert( rs_c == 1 ||
+            cs_c == 1 );
 #endif
 
     switch ( !!pack_a << 9 | !!pack_b << 8 | n ) {
