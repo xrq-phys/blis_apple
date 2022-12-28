@@ -27,6 +27,12 @@ void bli_gemm_ex
 		return;
 	}
 
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+	// x86 has larger kernel-calling overhead s.t. for skinny sizes our new method
+	// cannot fully cover the need of gemmsup.
+	if ( BLIS_SUCCESS == bli_gemmsup( alpha, a, b, beta, c, cntx, rntm ) ) return;
+#endif
+
 	// When the datatype is elidgible // & k is not too small,
 	// invoke the sandbox method where dgemmsup and dpack interleaves
 	// each other.
