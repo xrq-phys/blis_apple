@@ -500,7 +500,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
      auxinfo_t       *data, \
      cntx_t          *cntx, \
      double *restrict a_p, \
-     double *restrict b_p \
+     double *restrict b_p, uint64_t pack_b \
     ) \
 { \
     const void* a_next = bli_auxinfo_next_a( data ); \
@@ -533,12 +533,15 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     /* First (B-packing) microkernel */ \
     mov(var(a), rax) \
     mov(var(a_p), rcx) \
+    mov(var(pack_b), rdi) \
     mov(rax, r8) \
     add(var(ps_a), r8) \
     mov(var(cs_a), r9) \
     mov(var(m_iter), rsi) \
     test(rsi, rsi) \
     je(.DM_LEFT) \
+    test(rdi, rdi) \
+    je(.DM_ITER) \
     DGEMM_6X8M_UKER_LOC(6,PACKA,pack,init) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
@@ -623,6 +626,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
       [alpha]  "m" (alpha), \
       [beta]   "m" (beta), \
       [b_p]    "m" (b_p), \
+      [pack_b] "m" (pack_b), \
       [a_next] "m" (a_next), \
       [b_next] "m" (b_next) \
     : "rax", "rbx", "rcx", "rdx", "rsi", "rdi", \
@@ -657,26 +661,30 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
     )
 {
 #ifdef DEBUG
-    assert( n == 8 );
+    assert( n <= 8 );
     assert( cs_b0 == 1 );
 #endif
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
 
-    if ( pack_a )
-        bli_dgemmsup2_rv_haswell_asm_6x8m_pack
-            ( m, n, k, alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0, beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p );
-    else
-        bli_dgemmsup2_rv_haswell_asm_6x8m_nopack
-            ( m, n, k, alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0, beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p );
+    if ( n == 8 ) {
+        if ( pack_a )
+            bli_dgemmsup2_rv_haswell_asm_6x8m_pack
+                ( m, n, k, alpha,
+                  a, rs_a0, cs_a0,
+                  b, rs_b0, cs_b0, beta,
+                  c, rs_c0, cs_c0,
+                  data, cntx, a_p, b_p, pack_b );
+        else
+            bli_dgemmsup2_rv_haswell_asm_6x8m_nopack
+                ( m, n, k, alpha,
+                  a, rs_a0, cs_a0,
+                  b, rs_b0, cs_b0, beta,
+                  c, rs_c0, cs_c0,
+                  data, cntx, a_p, b_p, pack_b );
+    } else {
+        assert( false );
+    }
 }
 #endif
 

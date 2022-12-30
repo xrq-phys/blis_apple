@@ -203,7 +203,7 @@ void bls_dgemm
                          c_l1, rs_c, cs_c,
                          &data, cntx,
                          a_panels, a_uker != a_panels && jr_offset + n_uker < n0,
-                         b_p, 1
+                         b_p,      b_uker != b_p
                         );
 
                 }
