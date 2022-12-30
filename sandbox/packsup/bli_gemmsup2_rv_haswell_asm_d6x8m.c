@@ -202,7 +202,7 @@
     vucomisd(xmm0, xmm3) /* set ZF if beta == 0. */ \
     je(.DBETAZERO_ ## LABEL_SUFFIX) /* if ZF = 1, jump to beta == 0 case */ \
 \
-        cmp(imm(8*8), rdi) /* set ZF if (8*rs_c) == 8. */ \
+        cmp(imm(8), rdi) /* set ZF if (8*rs_c) == 8. */ \
         jz(.DCOLSTORED_ ## LABEL_SUFFIX) /* jump to column storage case */ \
 \
             C1ROW_BETA_FWD(ymm4, ymm5, ymm3, rcx, rdi) \
@@ -235,7 +235,7 @@
 \
     label(.DBETAZERO_ ## LABEL_SUFFIX) \
 \
-        cmp(imm(8*8), rdi) /* set ZF if (8*rs_c) == 8. */ \
+        cmp(imm(8), rdi) /* set ZF if (8*rs_c) == 8. */ \
         jz(.DCOLSTORBZ_ ## LABEL_SUFFIX) /* jump to column storage case */ \
 \
             C1ROW_FWD(ymm4, ymm5, rcx, rdi) \
