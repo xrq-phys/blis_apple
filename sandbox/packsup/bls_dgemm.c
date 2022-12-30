@@ -147,45 +147,14 @@ void bls_dgemm
                         }
                     }
 
-                    for ( dim_t ir = 0; ir < num_ir && m0 - ic_offset - ir * mr > 0; ++ir )
-                    {
-                        double *c_r  = c_l1 + ir * mr * rs_c;
-                        double *a_l1 = a_l2 + ir * mr * rs_a;
-                        double *a_p = a_panels + mr * k_ps * ir;
-                        dim_t ir_offset = ic_offset + ir * mr;
-                        dim_t m_uker = min_(m0 - ir_offset, mr);
-
-                        if ( ir > 0 ) {
-                            b_uker = b_p;
-                            rs_b_uker = nr;
-                            cs_b_uker = 1;
-                        }
-
-                        if ( bli_rntm_pack_a( rntm ) || jr > 0 ) {
-                            a_uker = a_p;
-                            rs_a_uker = 1;
-                            cs_a_uker = mr;
-                        } else {
-                            a_uker = a_l1;
-                            rs_a_uker = rs_a;
-                            cs_a_uker = cs_a;
-                        }
-
+                    if ( true ) {
                         // Set next_a.
-                        if ( ir + 1 < num_ir && ir_offset + m_uker < m0 ) {
-                            if ( jr > 0 ) { // Previous jr packed a.
-                                bli_auxinfo_set_next_a( a_p + mr * k_ps, &data );
-                                bli_auxinfo_set_ps_a( mr, &data ); // In fact, cs_a_next.
-                            } else {
-                                bli_auxinfo_set_next_a( a_l1 + mr * rs_a, &data );
-                                bli_auxinfo_set_ps_a( cs_a, &data ); // cs_a_next.
-                            }
-                        } else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
+                        if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
                             // Still using the already-packed a panels.
                             bli_auxinfo_set_next_a( a_panels, &data );
-                            bli_auxinfo_set_ps_a( mr, &data ); // cs_a_next.
+                            bli_auxinfo_set_ps_b( mr, &data ); // cs_a_next.
                         } else {
-                            bli_auxinfo_set_ps_a( cs_a, &data ); // cs_a_next.
+                            bli_auxinfo_set_ps_b( cs_a, &data ); // cs_a_next.
                             if ( ic_offset + mc < m0 )
                                 bli_auxinfo_set_next_a( a_l2 + mc * rs_a, &data );
                             else
@@ -196,10 +165,7 @@ void bls_dgemm
                         }
 
                         // Set next_b
-                        if ( ir + 1 < num_ir && ir_offset + m_uker < m0 )
-                            // Next b must be next same jr & packed by this / some previous uker call.
-                            bli_auxinfo_set_next_b( b_p, &data );
-                        else if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
+                        if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
                             if ( ic_offset > 0 ) // Previous ic has packed b for the next jr.
                                 bli_auxinfo_set_next_b( b_p + nr * k_ps, &data );
                             else
@@ -212,34 +178,40 @@ void bls_dgemm
                                 bli_auxinfo_set_next_b( b_l3 + kc * rs_b, &data );
                             else
                                 bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
+                    }
 
-                        if ( a_uker == a_p && b_uker == b_p &&
-                             // Some edge cases are too lossy for bulk kernels.
-                             // Prefer sup even when A & B are both packed.
-                             m_uker + n_uker > mr + nr - 3 )
-                            ukr_bulk
-                                (
-                                 m_uker, n_uker, k_uker,
-                                 alpha,
-                                 a_uker, b_uker,
-                                 beta,
-                                 c_r, rs_c, cs_c,
-                                 &data, cntx
-                                );
-                        else
+                    if ( true ) {
+                        dim_t m_mker = min_( m0 - ic_offset, mc );
+                        bli_auxinfo_set_is_a( mr * k_ps, &data );
+
+                        if ( bli_rntm_pack_a( rntm ) || jr > 0 ) {
+                            a_uker = a_panels;
+                            rs_a_uker = 1;
+                            cs_a_uker = mr;
+                            bli_auxinfo_set_ps_a( bli_auxinfo_is_a( &data ), &data );
+                        } else {
+                            a_uker = a_l2;
+                            rs_a_uker = rs_a;
+                            cs_a_uker = cs_a;
+                            bli_auxinfo_set_ps_a( rs_a * 6, &data );
+                        }
+
+                        if ( true ) {
                             ukr_sup
                                 (
-                                 m_uker, n_uker, k_uker,
+                                 m_mker, n_uker, k_uker,
                                  alpha,
                                  a_uker, rs_a_uker, cs_a_uker,
                                  b_uker, rs_b_uker, cs_b_uker,
                                  beta,
-                                 c_r, rs_c, cs_c,
+                                 c_l1, rs_c, cs_c,
                                  &data, cntx,
-                                 a_p, a_uker != a_p && jr_offset + n_uker < n0,
-                                 b_p, b_uker != b_p && ir_offset + m_uker < m0
+                                 a_panels, a_uker != a_panels && jr_offset + n_uker < n0,
+                                 b_p, 1
                                 );
+                        }
                     }
+
                 }
             }
             beta = &one;

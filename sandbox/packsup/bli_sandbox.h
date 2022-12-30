@@ -21,7 +21,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8r
      double *restrict b_p, int pack_b
     );
 
-void bli_dgemmsup2_rv_haswell_asm_6x8rn
+void bli_dgemmsup2_rv_haswell_asm_6x8m
     (
      dim_t            m,
      dim_t            n,

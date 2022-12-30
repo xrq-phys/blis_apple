@@ -27,11 +27,13 @@ void bli_gemm_ex
 		return;
 	}
 
+	/*
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 	// x86 has larger kernel-calling overhead s.t. for skinny sizes our new method
 	// cannot fully cover the need of gemmsup.
 	if ( BLIS_SUCCESS == bli_gemmsup( alpha, a, b, beta, c, cntx, rntm ) ) return;
 #endif
+	*/
 
 	// When the datatype is elidgible // & k is not too small,
 	// invoke the sandbox method where dgemmsup and dpack interleaves
@@ -129,7 +131,7 @@ void bli_gemm_ex
 				// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 				bli_dgemm_haswell_asm_6x8, // Don't query. 8x6 would not work.
-				( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8r )
+				( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8m )
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
 				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
 				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
