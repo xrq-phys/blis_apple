@@ -24,18 +24,18 @@ void funcname \
 
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 
-SUPKER_DECL(bli_dgemmsup2_rv_armv8a_asm_8x6r);
-SUPKER_DECL(bli_dgemmsup2_rv_armv8a_asm_8x6c);
-SUPKER_DECL(bli_dgemmsup2_cv_armv8a_asm_8x6r);
-SUPKER_DECL(bli_dgemmsup2_cv_armv8a_asm_8x6c);
+SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8m);
+SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8rn);
 typedef typeof(&bli_dpackm_haswell_asm_8xk) l1mukr_t;
 typedef typeof(&bli_dgemm_haswell_asm_6x8) ukr_dgemm_bulk_t;
 typedef typeof(&bli_dgemmsup2_rv_haswell_asm_6x8m) ukr_dgemm_sup_t;
 
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
 
-SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8m);
-SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8rn);
+SUPKER_DECL(bli_dgemmsup2_rv_armv8a_asm_8x6r);
+SUPKER_DECL(bli_dgemmsup2_rv_armv8a_asm_8x6c);
+SUPKER_DECL(bli_dgemmsup2_cv_armv8a_asm_8x6r);
+SUPKER_DECL(bli_dgemmsup2_cv_armv8a_asm_8x6c);
 typedef typeof(&bli_dpackm_armv8a_int_8xk) l1mukr_t;
 typedef typeof(&bli_dgemm_armv8a_asm_8x6r) ukr_dgemm_bulk_t;
 typedef typeof(&bli_dgemmsup2_rv_armv8a_asm_8x6r) ukr_dgemm_sup_t;
