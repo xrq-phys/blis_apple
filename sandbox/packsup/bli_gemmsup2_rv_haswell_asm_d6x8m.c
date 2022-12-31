@@ -14,9 +14,12 @@
 #define PACK_nopack(_1)
 #define PACK_pack(_1) _1
 
-#define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB) \
-    vmovupd(mem(BADDR    ), B0) \
-    vmovupd(mem(BADDR, 32), B1) \
+#define VMOV_align vmovapd
+#define VMOV_noalign vmovupd
+
+#define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+    VMOV_ ## BAlign (mem(BADDR    ), B0) \
+    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
     add(RSB, BADDR) \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
@@ -89,9 +92,9 @@
     INST (ymm(A0_), B1, C41) \
     PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 4*8)))
 
-#define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB) \
-    vmovupd(mem(BADDR    ), B0) \
-    vmovupd(mem(BADDR, 32), B1) \
+#define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+    VMOV_ ## BAlign (mem(BADDR    ), B0) \
+    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
     DGEMM_MX8_NANOKER_ALINE_## M (INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
     add(CSA, AADDR) \
     add(RSB, BADDR) \
@@ -100,26 +103,26 @@
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
     PACK_ ##PACKB (add(imm(8*8), PBADDR))
 
-#define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB)
+#define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
 
-#define DGEMM_MX8_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER(M,INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB)
+#define DGEMM_MX8_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER(M,INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
 
-#define DGEMM_MX8_NANOKER_LOC_1(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC(1,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_MX8_NANOKER_LOC_2(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC(2,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_MX8_NANOKER_LOC_3(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC(3,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_MX8_NANOKER_LOC_4(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC(4,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_MX8_NANOKER_LOC_5(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC(5,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_MX8_NANOKER_LOC_6(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
-#define DGEMM_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB) \
-    DGEMM_MX8_NANOKER_LOC_## M(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB)
+#define DGEMM_MX8_NANOKER_LOC_1(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC(1,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_2(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC(2,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_3(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC(3,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_4(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC(4,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_5(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC(5,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_6(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_MX8_NANOKER_LOC_## M(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
 
 #define C1ROW_BETA_FWD(VFH,VLH,VBETA,CADDR,CSC) \
     vfmadd231pd(mem(CADDR), VBETA, VFH) \
@@ -351,7 +354,7 @@
 
 // Define microkernel here.
 // It will be instantiated multiple times by the millikernel assembly.
-#define DGEMM_6X8M_UKER_LOC(M,PACKA,PACKB,LABEL_SUFFIX) \
+#define DGEMM_6X8M_UKER_LOC(M,PACKA,PACKB,BAlign,LABEL_SUFFIX) \
     /* The microkernel code does not take care of loading a-related address.
      * The millikernel asm takes care of forwarding A & C to the location required,
      * + C addresses aught to be stored as well.
@@ -403,27 +406,27 @@
 \
     label(.DK_4LOOP_INIT_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 1, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 2, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r12, 1, 5*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(rsi) \
     je(.DK_LEFT_LOOP_PREP_ ## LABEL_SUFFIX) \
 \
     label(.DK_4LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 1, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 2, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r12, 1, 5*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(rsi) \
     jne(.DK_4LOOP_ ## LABEL_SUFFIX) \
 \
@@ -438,7 +441,7 @@
     label(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
         add(r9, r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(r14) \
     jne(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
 \
@@ -569,7 +572,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     je(.DM_LEFT) \
     test(rdi, rdi) \
     je(.DM_ITER) \
-    DGEMM_6X8M_UKER_LOC(6,PACKA,pack,init) \
+    DGEMM_6X8M_UKER_LOC(6,PACKA,pack,noalign,init) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
@@ -591,7 +594,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
 \
     /* Microkernels in between */ \
     label(.DM_ITER) \
-    DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,iter) \
+    /* TODO: Using vmovapd here discards support for `no packing at all`. */ \
+    DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,align,iter) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
@@ -623,13 +627,13 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     cmp(imm(3), rsi) jz(.D3X8_GEMM_UKR) \
     cmp(imm(2), rsi) jz(.D2X8_GEMM_UKR) \
     jmp(.D1X8_GEMM_UKR) \
-\
-    label(.D6X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,fin6) jmp(.DME) \
-    label(.D5X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(5,PACKA,nopack,fin5) jmp(.DME) \
-    label(.D4X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(4,PACKA,nopack,fin4) jmp(.DME) \
-    label(.D3X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(3,PACKA,nopack,fin3) jmp(.DME) \
-    label(.D2X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(2,PACKA,nopack,fin2) jmp(.DME) \
-    label(.D1X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(1,PACKA,nopack,fin1) \
+    /* TODO: Consider aligned cases here? */ \
+    label(.D6X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,noalign,fin6) jmp(.DME) \
+    label(.D5X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(5,PACKA,nopack,noalign,fin5) jmp(.DME) \
+    label(.D4X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(4,PACKA,nopack,noalign,fin4) jmp(.DME) \
+    label(.D3X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(3,PACKA,nopack,noalign,fin3) jmp(.DME) \
+    label(.D2X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(2,PACKA,nopack,noalign,fin2) jmp(.DME) \
+    label(.D1X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(1,PACKA,nopack,noalign,fin1) \
 \
     label(.DME) \
 \
