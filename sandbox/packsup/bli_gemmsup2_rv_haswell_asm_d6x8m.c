@@ -10,6 +10,7 @@
 #define vpmovsxbq(_0, _1) INSTR_(vpmovsxbq, _0, _1)
 #define vmaskmovpd(_0, _1, _2) INSTR_(vmaskmovpd, _0, _1, _2)
 
+#define min_(A, B) ((A) < (B) ? (A) : (B))
 
 #define PACK_nopack(_1)
 #define PACK_pack(_1) _1
@@ -537,6 +538,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     uint64_t ps_a      = bli_auxinfo_ps_a( data ) << 3; \
     uint64_t ps_a_p    = bli_auxinfo_is_a( data ) << 3; /* Borrow the space. */ \
     uint64_t cs_a_next = bli_auxinfo_ps_b( data ) << 3; /* Borrow the space. */ \
+    uint64_t ps_a_prfm = ps_a; min_(ps_a, 128*8); /* Packed A: Avoid prefetching too far away. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
      * different size than is expected by load instructions. */ \
@@ -565,7 +567,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     mov(var(a_p), rcx) \
     mov(var(pack_b), rdi) \
     mov(rax, r8) \
-    add(var(ps_a), r8) \
+    add(var(ps_a2), r8) \
     mov(var(cs_a), r9) \
     mov(var(m_iter), rsi) \
     test(rsi, rsi) \
@@ -577,7 +579,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
     lea(mem(rax, rdi, 1), rax) /* Prepare a for next uker */ \
-    lea(mem(rax, rdi, 1), r8) /* Prepare a_next for next uker */ \
+    mov(rax, r8) /******* Prepare a_next for next uker */ \
+    add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
     mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
     mov(var(a_p), rcx) /*** Prepare a_p for next uker */ \
     add(var(ps_a_p), rcx) /* Prepare a_p for next uker */ \
@@ -600,7 +603,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
     lea(mem(rax, rdi, 1), rax) /* Prepare a for next uker */ \
-    lea(mem(rax, rdi, 1), r8) /* Prepare a_next for next uker */ \
+    mov(rax, r8) /******* Prepare a_next for next uker */ \
+    add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
     mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
     mov(var(a_p), rcx) /*** Prepare a_p for next uker */ \
     add(var(ps_a_p), rcx) /* Prepare a_p for next uker */ \
@@ -618,6 +622,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
 \
     /* Final microkernel */ \
     label(.DM_LEFT) \
+    /* TODO: Consider large / small k. */ \
     mov(var(a_next), r8) /* Override a_next w/ next millikernel. */ \
     mov(var(cs_a2), r9) /* Override cs_a_next w/ next millikernel. */ \
     mov(var(m_left), rsi) \
@@ -650,6 +655,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
       [cs_a2]  "m" (cs_a_next), \
       [ps_a]   "m" (ps_a), \
       [ps_a_p] "m" (ps_a_p), \
+      [ps_a2]  "m" (ps_a_prfm), \
       [rs_c]   "m" (rs_c), \
       [cs_c]   "m" (cs_c), \
       [k_iter] "m" (k_iter), \
