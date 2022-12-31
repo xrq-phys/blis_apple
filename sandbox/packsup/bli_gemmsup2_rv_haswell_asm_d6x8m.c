@@ -704,9 +704,9 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
 #ifdef DEBUG
     assert( n <= 8 );
     assert( cs_b0 == 1 );
-#endif
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
+#endif
 
     if ( n == 8 ) {
         if ( pack_a )
@@ -724,7 +724,68 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
                   c, rs_c0, cs_c0,
                   data, cntx, a_p, b_p, pack_b );
     } else {
-        assert( false );
+        const void * a_next_orig = bli_auxinfo_next_a( data );
+        const void * b_next_orig = bli_auxinfo_next_b( data );
+        const uint64_t ps_a      = bli_auxinfo_ps_a( data );
+        const uint64_t cs_a_next = bli_auxinfo_ps_b( data );
+
+        for ( ; m >= 6; m -= 6 ) {
+            if ( m > 6 ) {
+                bli_auxinfo_set_next_a( a + ps_a, data );
+                bli_auxinfo_set_next_b( b, data );
+                bli_auxinfo_set_ps_a( cs_a0, data );
+            } else {
+                bli_auxinfo_set_next_a( a_next_orig, data );
+                bli_auxinfo_set_next_b( b_next_orig, data );
+                bli_auxinfo_set_ps_a( cs_a_next, data );
+            }
+
+            bli_dgemmsup2_rv_haswell_asm_6x8rn
+                (
+                 6, n, k, alpha,
+                 a, rs_a0, cs_a0,
+                 b, rs_b0, cs_b0, beta,
+                 c, rs_c0, cs_c0,
+                 data, cntx,
+                 a_p, 0, // pack_a
+                 b_p, pack_b
+                );
+            a += ps_a; // No need to a_p
+            c += 6 * rs_c0;
+            if ( pack_b && b_p != b ) {
+                b = b_p;
+                rs_b0 = 8;
+                cs_b0 = 1;
+            }
+        }
+
+        if ( m > 0 ) {
+            bli_auxinfo_set_next_a( a_next_orig, data );
+            bli_auxinfo_set_next_b( b_next_orig, data );
+            bli_auxinfo_set_ps_a( cs_a_next, data );
+
+            double c_t[6*8];
+            double one = 1.0;
+            double zero = 0.0;
+
+            bli_dgemmsup2_rv_haswell_asm_6x8rn
+                (
+                 6, n, k, &one,
+                 a, rs_a0, cs_a0,
+                 b, rs_b0, cs_b0, &zero,
+                 c_t, 8, 1,
+                 data, cntx,
+                 a_p, 0, // pack_a
+                 b_p, pack_b
+                );
+            for ( int i = 0; i < m; ++i )
+                for ( int j = 0; j < n; ++j )
+                    c[ rs_c0 * i + cs_c0 * j ] =
+                        c[ rs_c0 * i + cs_c0 * j ] * *beta +
+                            c_t[ 8 * i + j ] * *alpha;
+        }
+        bli_auxinfo_set_ps_a( ps_a, data );
+        bli_auxinfo_set_ps_b( cs_a_next, data );
     }
 }
 #endif
