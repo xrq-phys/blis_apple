@@ -353,12 +353,40 @@
 // It will be instantiated multiple times by the millikernel assembly.
 #define DGEMM_6X8M_UKER_LOC(M,PACKA,PACKB,LABEL_SUFFIX) \
     /* The microkernel code does not take care of loading a-related address.
-     * The millikernel asm takes care of forwarding a to the location required,
-     * *** while C addresses aught to be forwarded & stored *** .
+     * The millikernel asm takes care of forwarding A & C to the location required,
+     * + C addresses aught to be stored as well.
      * mov(var(a), rax)
+     * mov(var(c), rdx)
      * mov(var(a_p), rcx)
      * mov(var(a_next), r8)
      * mov(var(cs_a2), r9) ** r9 = cs_a_next */ \
+\
+    mov(var(rs_c), rdi) \
+    mov(var(cs_c), rsi) \
+	cmp(imm(8), rdi) \
+	jz(.DCOLPREFETCH_ ## LABEL_SUFFIX) \
+		lea(mem(rdi, rdi, 2), r13) /* r13 = 3*rs_c; */ \
+		lea(mem(rdx, r13, 1), r14) /* r14 = c + 3*rs_c; */ \
+		prefetch(0, mem(rdx, 7*8)) /* prefetch c + 0*rs_c */ \
+		prefetch(0, mem(rdx, rdi, 1, 7*8)) /* prefetch c + 1*rs_c */ \
+		prefetch(0, mem(rdx, rdi, 2, 7*8)) /* prefetch c + 2*rs_c */ \
+		prefetch(0, mem(r14, 7*8)) /* prefetch c + 3*rs_c */ \
+		prefetch(0, mem(r14, rdi, 1, 7*8)) /* prefetch c + 4*rs_c */ \
+		prefetch(0, mem(r14, rdi, 2, 7*8)) /* prefetch c + 5*rs_c */ \
+		jmp(.DPREFETCHDONE_ ## LABEL_SUFFIX) \
+	label(.DCOLPREFETCH_ ## LABEL_SUFFIX) \
+		lea(mem(rsi, rsi, 2), r13) /* r13 = 3*cs_c; */ \
+		lea(mem(rdx, r13, 1), r14) /* r14 = c + 3*cs_c; */ \
+		prefetch(0, mem(rdx, 5*8)) /* prefetch c + 0*cs_c */ \
+		prefetch(0, mem(rdx, rsi, 1, 5*8)) /* prefetch c + 1*cs_c */ \
+		prefetch(0, mem(rdx, rsi, 2, 5*8)) /* prefetch c + 2*cs_c */ \
+		prefetch(0, mem(r14, 5*8)) /* prefetch c + 3*cs_c */ \
+		prefetch(0, mem(r14, rsi, 1, 5*8)) /* prefetch c + 4*cs_c */ \
+		prefetch(0, mem(r14, rsi, 2, 5*8)) /* prefetch c + 5*cs_c */ \
+		prefetch(0, mem(r14, r13, 1, 5*8)) /* prefetch c + 6*cs_c */ \
+		prefetch(0, mem(r14, rsi, 4, 5*8)) /* prefetch c + 7*cs_c */ \
+	label(.DPREFETCHDONE_ ## LABEL_SUFFIX) \
+\
     mov(var(b), rbx) \
     mov(var(b_p), rdx) \
     mov(var(rs_a), rdi) \
@@ -369,8 +397,6 @@
     lea(mem(r9, r9, 2), r12) /* r12 = 3*cs_a_next; */ \
     mov(var(k_iter), rsi) \
     mov(var(k_left), r14) \
-\
-    /* TODO: Prefetch C. */ \
 \
     test(rsi, rsi) \
     je(.DEMPTYALL_ ## LABEL_SUFFIX) \
@@ -532,6 +558,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
 \
     /* First (B-packing) microkernel */ \
     mov(var(a), rax) \
+    mov(var(c), rdx) \
     mov(var(a_p), rcx) \
     mov(var(pack_b), rdi) \
     mov(rax, r8) \
