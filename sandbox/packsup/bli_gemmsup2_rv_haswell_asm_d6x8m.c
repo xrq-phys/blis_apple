@@ -19,9 +19,6 @@
 #define VMOV_noalign vmovupd
 
 #define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
-    VMOV_ ## BAlign (mem(BADDR    ), B0) \
-    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
-    add(RSB, BADDR) \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
     INST (ymm(A0_), B0, C00) \
@@ -50,7 +47,10 @@
     PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
     PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
-    PACK_ ##PACKB (add(imm(8*8), PBADDR))
+    PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
+    VMOV_ ## BAlign (mem(BADDR    ), B0) \
+    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
+    add(RSB, BADDR)
 
 #define DGEMM_MX8_NANOKER_ALINE_1(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
     vbroadcastsd(mem(AADDR), ymm(A0_)) \
@@ -94,15 +94,15 @@
     PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 4*8)))
 
 #define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
-    VMOV_ ## BAlign (mem(BADDR    ), B0) \
-    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
     DGEMM_MX8_NANOKER_ALINE_## M (INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
     add(CSA, AADDR) \
-    add(RSB, BADDR) \
     PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
     PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
-    PACK_ ##PACKB (add(imm(8*8), PBADDR))
+    PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
+    VMOV_ ## BAlign (mem(BADDR    ), B0) \
+    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
+    add(RSB, BADDR)
 
 #define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
     DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
@@ -401,6 +401,10 @@
     lea(mem(r9, r9, 2), r12) /* r12 = 3*cs_a_next; */ \
     mov(var(k_iter), rsi) \
     mov(var(k_left), r14) \
+\
+    VMOV_ ## BAlign (mem(rbx), ymm2) \
+    VMOV_ ## BAlign (mem(rbx, 32), ymm3) \
+    add(r11, rbx) \
 \
     test(rsi, rsi) \
     je(.DEMPTYALL_ ## LABEL_SUFFIX) \
