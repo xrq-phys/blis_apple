@@ -542,7 +542,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     uint64_t ps_a      = bli_auxinfo_ps_a( data ) << 3; \
     uint64_t ps_a_p    = bli_auxinfo_is_a( data ) << 3; /* Borrow the space. */ \
     uint64_t cs_a_next = bli_auxinfo_ps_b( data ) << 3; /* Borrow the space. */ \
-    uint64_t ps_a_prfm = min_(ps_a, 128*8); /* Packed A: Avoid prefetching too far away. */ \
+    uint64_t ps_a_prfm = min_(ps_a, 64*8); /* Packed A: Avoid prefetching too far away. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
      * different size than is expected by load instructions. */ \
