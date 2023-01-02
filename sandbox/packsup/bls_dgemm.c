@@ -23,20 +23,25 @@ void bls_dgemm
      double *restrict c, inc_t rs_c, inc_t cs_c,
      cntx_t *cntx,
      rntm_t *rntm,
-     ukr_dgemm_bulk_t ukr_bulk,
-     ukr_dgemm_sup_t  ukr_sup
+     ukr_dgemm_sup_t ukr_sup,
+     dim_t mr, dim_t nr
     )
 {
-    const dim_t mc = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MC, cntx );
-    const dim_t nc = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_NC, cntx );
+    const dim_t mc_= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MC, cntx );
+    const dim_t nc_= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_NC, cntx );
     const dim_t kc = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_KC, cntx );
-    const dim_t mr = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MR, cntx );
-    const dim_t nr = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_NR, cntx );
     const dim_t kc_max = kc + 47;
+#if 0
+    const dim_t mc = mc_;
+    const dim_t nc = nc_;
     assert_( !(mc % mr), "MC not multiple of MR." );
     assert_( !(nc % nr), "NC not multiple of NR." );
-    dim_t num_ir = mc / mr;
-    dim_t num_jr = nc / nr;
+#else
+    const dim_t mc = ( mc_ + mr - 1 ) / mr * mr;
+    const dim_t nc = ( nc_ + nr - 1 ) / nr * nr;
+#endif
+    const dim_t num_ir = mc / mr;
+    const dim_t num_jr = nc / nr;
 
     auxinfo_t data;
     bli_auxinfo_set_next_a( 0, &data );

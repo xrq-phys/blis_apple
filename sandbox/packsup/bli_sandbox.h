@@ -54,8 +54,8 @@ void bls_dgemm
      double *restrict c, inc_t rs_c, inc_t cs_c,
      cntx_t *cntx,
      rntm_t *rntm,
-     ukr_dgemm_bulk_t ukr_bulk,
-     ukr_dgemm_sup_t  ukr_sup
+     ukr_dgemm_sup_t ukr_sup,
+     dim_t mr, dim_t nr
     );
 
 #ifdef __cplusplus
