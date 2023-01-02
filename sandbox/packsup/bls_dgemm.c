@@ -42,6 +42,12 @@ void bls_dgemm
 #endif
     const dim_t num_ir = mc / mr;
     const dim_t num_jr = nc / nr;
+    const bool has_pack_a =
+        n0 >= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_NT, cntx ) &&
+        k0 >= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_KT, cntx );
+    const bool has_pack_b =
+        m0 >= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MT, cntx ) &&
+        k0 >= bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_KT, cntx );
 
     auxinfo_t data;
     bli_auxinfo_set_next_a( 0, &data );
@@ -118,7 +124,7 @@ void bls_dgemm
                     dim_t jr_offset = jc_offset + jr * nr;
                     dim_t n_uker = min_(n0 - jr_offset, nr);
 
-                    if ( bli_rntm_pack_b( rntm ) || ic_offset > 0 ) {
+                    if ( bli_rntm_pack_b( rntm ) || ( ic_offset > 0 && has_pack_b ) ) {
                         // Reuse packed b.
                         b_uker = b_p;
                         rs_b_uker = nr;
@@ -154,9 +160,14 @@ void bls_dgemm
 
                     // Set next_a.
                     if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
-                        // Still using the already-packed a panels.
-                        bli_auxinfo_set_next_a( a_panels, &data );
-                        bli_auxinfo_set_ps_b( mr, &data ); // cs_a_next.
+                        if ( has_pack_a ) {
+                            // Still using the already-packed a panels.
+                            bli_auxinfo_set_next_a( a_panels, &data );
+                            bli_auxinfo_set_ps_b( mr, &data ); // cs_a_next.
+                        } else {
+                            bli_auxinfo_set_next_a( a_l2, &data );
+                            bli_auxinfo_set_ps_b( cs_a, &data ); // cs_a_next.
+                        }
                     } else {
                         bli_auxinfo_set_ps_b( cs_a, &data ); // cs_a_next.
                         if ( ic_offset + mc < m0 )
@@ -170,7 +181,7 @@ void bls_dgemm
 
                     // Set next_b
                     if ( jr + 1 < num_jr && jr_offset + n_uker < n0 ) {
-                        if ( ic_offset > 0 ) // Previous ic has packed b for the next jr.
+                        if ( ic_offset > 0 && has_pack_b ) // Previous ic has packed b for the next jr.
                             bli_auxinfo_set_next_b( b_p + nr * k_ps, &data );
                         else
                             bli_auxinfo_set_next_b( b_l1 + nr * cs_b, &data );
@@ -184,9 +195,9 @@ void bls_dgemm
                             bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
 
                     dim_t m_mker = min_( m0 - ic_offset, mc );
-                    bli_auxinfo_set_is_a( mr * k_ps, &data );
+                    bli_auxinfo_set_is_a( mr * k_ps, &data ); // ps_a_p.
 
-                    if ( bli_rntm_pack_a( rntm ) || jr > 0 ) {
+                    if ( bli_rntm_pack_a( rntm ) || ( jr > 0 && has_pack_a ) ) {
                         a_uker = a_panels;
                         rs_a_uker = 1;
                         cs_a_uker = mr;
@@ -207,8 +218,8 @@ void bls_dgemm
                          beta,
                          c_l1, rs_c, cs_c,
                          &data, cntx,
-                         a_panels, a_uker != a_panels && jr_offset + n_uker < n0,
-                         b_p,      b_uker != b_p
+                         a_panels, a_uker != a_panels && jr_offset + n_uker < n0 && has_pack_a,
+                         b_p,      b_uker != b_p                                 && has_pack_b
                         );
 
                 }

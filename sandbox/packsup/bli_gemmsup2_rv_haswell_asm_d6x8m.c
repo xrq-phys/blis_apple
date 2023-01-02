@@ -520,8 +520,8 @@
 
 // Start defining the millikernel.
 // This is the asm entry point for x86.
-#define GENDEF(PACKA) \
-BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
+#define GENDEF(PACKA,BAlign_,BAlign__) \
+BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -601,8 +601,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
 \
     /* Microkernels in between */ \
     label(.DM_ITER) \
-    /* TODO: Using vmovapd here discards support for `no packing at all`. */ \
-    DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,align,iter) \
+    DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,BAlign_,iter) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
@@ -637,12 +636,12 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
     cmp(imm(2), rsi) jz(.D2X8_GEMM_UKR) \
     jmp(.D1X8_GEMM_UKR) \
     /* TODO: Consider aligned cases here? */ \
-    label(.D6X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,noalign,fin6) jmp(.DME) \
-    label(.D5X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(5,PACKA,nopack,noalign,fin5) jmp(.DME) \
-    label(.D4X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(4,PACKA,nopack,noalign,fin4) jmp(.DME) \
-    label(.D3X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(3,PACKA,nopack,noalign,fin3) jmp(.DME) \
-    label(.D2X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(2,PACKA,nopack,noalign,fin2) jmp(.DME) \
-    label(.D1X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(1,PACKA,nopack,noalign,fin1) \
+    label(.D6X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,BAlign__,fin6) jmp(.DME) \
+    label(.D5X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(5,PACKA,nopack,BAlign__,fin5) jmp(.DME) \
+    label(.D4X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(4,PACKA,nopack,BAlign__,fin4) jmp(.DME) \
+    label(.D3X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(3,PACKA,nopack,BAlign__,fin3) jmp(.DME) \
+    label(.D2X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(2,PACKA,nopack,BAlign__,fin2) jmp(.DME) \
+    label(.D1X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(1,PACKA,nopack,BAlign__,fin1) \
 \
     label(.DME) \
 \
@@ -681,8 +680,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA \
 \
 }
 
-GENDEF(pack)
-GENDEF(nopack)
+GENDEF(pack,align,noalign) // Packing milliker can have edge case unaligned? TODO: Caller exclusion.
+GENDEF(nopack,align,align)
+GENDEF(nopack,noalign,noalign)
 
 #if 1
 void bli_dgemmsup2_rv_haswell_asm_6x8m
@@ -710,19 +710,30 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
 
     if ( n == 8 ) {
         if ( pack_a )
-            bli_dgemmsup2_rv_haswell_asm_6x8m_pack
+            bli_dgemmsup2_rv_haswell_asm_6x8m_pack_align
                 ( m, n, k, alpha,
                   a, rs_a0, cs_a0,
                   b, rs_b0, cs_b0, beta,
                   c, rs_c0, cs_c0,
                   data, cntx, a_p, b_p, pack_b );
-        else
-            bli_dgemmsup2_rv_haswell_asm_6x8m_nopack
-                ( m, n, k, alpha,
-                  a, rs_a0, cs_a0,
-                  b, rs_b0, cs_b0, beta,
-                  c, rs_c0, cs_c0,
-                  data, cntx, a_p, b_p, pack_b );
+        else {
+            if ( ((uint64_t)b % (4*8)) + rs_b0 % 4 )
+                // No packing at all.
+                bli_dgemmsup2_rv_haswell_asm_6x8m_nopack_noalign
+                    ( m, n, k, alpha,
+                      a, rs_a0, cs_a0,
+                      b, rs_b0, cs_b0, beta,
+                      c, rs_c0, cs_c0,
+                      data, cntx, a_p, b_p, pack_b );
+            else
+                // Fully packed.
+                bli_dgemmsup2_rv_haswell_asm_6x8m_nopack_align
+                    ( m, n, k, alpha,
+                      a, rs_a0, cs_a0,
+                      b, rs_b0, cs_b0, beta,
+                      c, rs_c0, cs_c0,
+                      data, cntx, a_p, b_p, pack_b );
+        }
     } else {
         const void * a_next_orig = bli_auxinfo_next_a( data );
         const void * b_next_orig = bli_auxinfo_next_b( data );
