@@ -18,160 +18,121 @@
 #define VMOV_align vmovapd
 #define VMOV_noalign vmovupd
 
-#define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+#define LOAD_BROW_8(BADDR,B0_,B1_,BAlign) \
+    VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
+    VMOV_ ## BAlign (mem(BADDR, 32), ymm(B1_))
+
+#define LOAD_BROW_6(BADDR,B0_,B1_,BAlign) \
+    VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
+    VMOV_ ## BAlign (mem(BADDR, 32), xmm(B1_))
+
+#define LOAD_BROW_5(BADDR,B0_,B1_,BAlign) \
+    VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
+    vmovsd( mem(BADDR, 32), xmm(B1_))
+
+#define LOAD_BROW_7(BADDR,B0_,B1_,BAlign) LOAD_BROW_8(BADDR,B0_,B1_,BAlign)
+#define LOAD_BROW_4(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), ymm(B0_))
+#define LOAD_BROW_3(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), ymm(B0_))
+#define LOAD_BROW_2(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), xmm(B0_))
+#define LOAD_BROW_1(BADDR,B0_,B1_,BAlign) vmovsd( mem(BADDR), xmm(B0_))
+
+#define FMA_ROW_8(INST,A_,B0_,B1_,C0_,C1_) \
+    INST (ymm(A_), ymm(B0_), ymm(C0_)) \
+    INST (ymm(A_), ymm(B1_), ymm(C1_))
+
+#define FMA_ROW_6(INST,A_,B0_,B1_,C0_,C1_) \
+    INST (ymm(A_), ymm(B0_), ymm(C0_)) \
+    INST (xmm(A_), xmm(B1_), xmm(C1_))
+
+#define FMA_ROW_7(INST,A_,B0_,B1_,C0_,C1_) FMA_ROW_8(INST,A_,B0_,B1_,C0_,C1_)
+#define FMA_ROW_5(INST,A_,B0_,B1_,C0_,C1_) FMA_ROW_6(INST,A_,B0_,B1_,C0_,C1_)
+#define FMA_ROW_4(INST,A_,B0_,B1_,C0_,C1_) INST (ymm(A_), ymm(B0_), ymm(C0_))
+#define FMA_ROW_3(INST,A_,B0_,B1_,C0_,C1_) INST (ymm(A_), ymm(B0_), ymm(C0_))
+#define FMA_ROW_2(INST,A_,B0_,B1_,C0_,C1_) INST (xmm(A_), xmm(B0_), xmm(C0_))
+#define FMA_ROW_1(INST,A_,B0_,B1_,C0_,C1_) INST (xmm(A_), xmm(B0_), xmm(C0_))
+
+#define DGEMM_6X8_NANOKER(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
-    INST (ymm(A0_), B0, C00) \
-    INST (ymm(A0_), B1, C01) \
+    FMA_ROW_## N (INST,A0_,B0_,B1_,C00_,C01_) \
     PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), B0, C10) \
-    INST (ymm(A1_), B1, C11) \
+    FMA_ROW_## N (INST,A1_,B0_,B1_,C10_,C11_) \
     PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR))) \
     vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA3,1), ymm(A1_)) \
-    INST (ymm(A0_), B0, C20) \
-    INST (ymm(A0_), B1, C21) \
+    FMA_ROW_## N (INST,A0_,B0_,B1_,C20_,C21_) \
     PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), B0, C30) \
-    INST (ymm(A1_), B1, C31) \
+    FMA_ROW_## N (INST,A1_,B0_,B1_,C30_,C31_) \
     PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 2*8))) \
     vbroadcastsd(mem(AADDR, RSA, 4), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA5,1), ymm(A1_)) \
     add(CSA, AADDR) \
-    INST (ymm(A0_), B0, C40) \
-    INST (ymm(A0_), B1, C41) \
+    FMA_ROW_## N (INST,A0_,B0_,B1_,C40_,C41_) \
     PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), B0, C50) \
-    INST (ymm(A1_), B1, C51) \
+    FMA_ROW_## N (INST,A1_,B0_,B1_,C50_,C51_) \
     PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 4*8))) \
     PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
-    PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
-    PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
+    PACK_ ##PACKB (vmovapd(ymm(B0_), mem(PBADDR    ))) /* TODO: Fixme: p_b n<=j<8 is undef. Zeroize it. */ \
+    PACK_ ##PACKB (vmovapd(ymm(B1_), mem(PBADDR, 32))) \
     PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
-    VMOV_ ## BAlign (mem(BADDR    ), B0) \
-    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
+    LOAD_BROW_## N (BADDR,B0_,B1_,BAlign) \
     add(RSB, BADDR)
 
-#define DGEMM_MX8_NANOKER_ALINE_1(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    vbroadcastsd(mem(AADDR), ymm(A0_)) \
-    INST (ymm(A0_), B0, C00) \
-    INST (ymm(A0_), B1, C01) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR)))
+#define DGEMM_NANOKER_LOC(N,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
+    DGEMM_6X8_NANOKER(N,INST,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
 
-#define DGEMM_MX8_NANOKER_ALINE_2(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
-    vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
-    INST (ymm(A0_), B0, C00) \
-    INST (ymm(A0_), B1, C01) \
-    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), B0, C10) \
-    INST (ymm(A1_), B1, C11) \
-    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR)))
+#define BETA_nz(_1) _1
+#define BETA_z(_1)
 
-#define DGEMM_MX8_NANOKER_ALINE_3(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    DGEMM_MX8_NANOKER_ALINE_2(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
-    INST (ymm(A0_), B0, C20) \
-    INST (ymm(A0_), B1, C21) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 2*8)))
-
-#define DGEMM_MX8_NANOKER_ALINE_4(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    DGEMM_MX8_NANOKER_ALINE_2(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
-    vbroadcastsd(mem(AADDR, RSA3,1), ymm(A1_)) \
-    INST (ymm(A0_), B0, C20) \
-    INST (ymm(A0_), B1, C21) \
-    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), B0, C30) \
-    INST (ymm(A1_), B1, C31) \
-    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 2*8)))
-
-#define DGEMM_MX8_NANOKER_ALINE_5(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    DGEMM_MX8_NANOKER_ALINE_4(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    vbroadcastsd(mem(AADDR, RSA, 4), ymm(A0_)) \
-    INST (ymm(A0_), B0, C40) \
-    INST (ymm(A0_), B1, C41) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 4*8)))
-
-#define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_ALINE_## M (INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
-    add(CSA, AADDR) \
-    PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
-    PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
-    PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
-    PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
-    VMOV_ ## BAlign (mem(BADDR    ), B0) \
-    VMOV_ ## BAlign (mem(BADDR, 32), B1) \
-    add(RSB, BADDR)
-
-#define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
-
-#define DGEMM_MX8_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER(M,INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
-
-#define DGEMM_MX8_NANOKER_LOC_1(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(1,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_2(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(2,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_3(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(3,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_4(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(4,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_5(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(5,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_6(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC_## M(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-
-#define C1ROW_BETA_FWD(VFH,VLH,VBETA,CADDR,CSC) \
-    vfmadd231pd(mem(CADDR), VBETA, VFH) \
-    vmovupd(VFH, mem(CADDR)) \
-    vfmadd231pd(mem(CADDR, 32), VBETA, VLH) \
-    vmovupd(VLH, mem(CADDR, 32)) \
+#define C1ROW_FWD_8(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR, 32), ymm(VBETA_), ymm(VLH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
+    vmovupd(ymm(VLH_), mem(CADDR, 32)) \
     add(CSC, CADDR)
 
-#define C1ROW_FWD(VFH,VLH,CADDR,CSC) \
-    vmovupd(VFH, mem(CADDR)) \
-    vmovupd(VLH, mem(CADDR, 32)) \
+#define C1ROW_FWD_7(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR, 32), ymm(VBETA_), ymm(VLH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
+    vmaskmovpd(ymm(VLH_), VMASK, mem(CADDR, 32)) \
     add(CSC, CADDR)
 
-#define CSTORE_LOC_1(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm4, ymm5, ymm3, CADDR, RSC)
-#define CSTORE_LOC_2(CADDR,RSC) \
-    CSTORE_LOC_1(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm6, ymm7, ymm3, CADDR, RSC)
-#define CSTORE_LOC_3(CADDR,RSC) \
-    CSTORE_LOC_2(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm8, ymm9, ymm3, CADDR, RSC)
-#define CSTORE_LOC_4(CADDR,RSC) \
-    CSTORE_LOC_3(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm10, ymm11, ymm3, CADDR, RSC)
-#define CSTORE_LOC_5(CADDR,RSC) \
-    CSTORE_LOC_4(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm12, ymm13, ymm3, CADDR, RSC)
-#define CSTORE_LOC_6(CADDR,RSC) \
-    CSTORE_LOC_5(CADDR,RSC) \
-    C1ROW_BETA_FWD(ymm14, ymm15, ymm3, CADDR, RSC)
+#define C1ROW_FWD_6(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR, 32), xmm(VBETA_), xmm(VLH_)) ) \
+    vmovupd(xmm(VLH_), mem(CADDR, 32)) \
+    add(CSC, CADDR)
 
-#define CSTOREZB_LOC_1(CADDR,RSC) \
-    C1ROW_FWD(ymm4, ymm5, CADDR, RSC)
-#define CSTOREZB_LOC_2(CADDR,RSC) \
-    CSTOREZB_LOC_1(CADDR,RSC) \
-    C1ROW_FWD(ymm6, ymm7, CADDR, RSC)
-#define CSTOREZB_LOC_3(CADDR,RSC) \
-    CSTOREZB_LOC_2(CADDR,RSC) \
-    C1ROW_FWD(ymm8, ymm9, CADDR, RSC)
-#define CSTOREZB_LOC_4(CADDR,RSC) \
-    CSTOREZB_LOC_3(CADDR,RSC) \
-    C1ROW_FWD(ymm10, ymm11, CADDR, RSC)
-#define CSTOREZB_LOC_5(CADDR,RSC) \
-    CSTOREZB_LOC_4(CADDR,RSC) \
-    C1ROW_FWD(ymm12, ymm13, CADDR, RSC)
-#define CSTOREZB_LOC_6(CADDR,RSC) \
-    CSTOREZB_LOC_5(CADDR,RSC) \
-    C1ROW_FWD(ymm14, ymm15, CADDR, RSC)
+#define C1ROW_FWD_5(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
+    BETA_ ## BETA( vmovsd(mem(CADDR, 32), xmm(VFH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(xmm(VFH_), xmm(VBETA_), xmm(VLH_)) ) \
+    vmovsd(xmm(VLH_), mem(CADDR, 32)) \
+    add(CSC, CADDR)
+
+#define C1ROW_FWD_4(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
+    add(CSC, CADDR)
+
+#define C1ROW_FWD_3(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    vmaskmovpd(ymm(VFH_), VMASK, mem(CADDR)) \
+    add(CSC, CADDR)
+
+#define C1ROW_FWD_2(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), xmm(VBETA_), xmm(VFH_)) ) \
+    vmovupd(xmm(VFH_), mem(CADDR)) \
+    add(CSC, CADDR)
+
+#define C1ROW_FWD_1(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
+    BETA_ ## BETA( vmovsd(mem(CADDR), xmm(VLH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(xmm(VLH_), xmm(VBETA_), xmm(VFH_)) ) \
+    vmovsd(xmm(VFH_), mem(CADDR)) \
+    add(CSC, CADDR)
 
 #define DTRANSPOSE_4X4(C0,C1,C2,C3,V0_,V1_,V2_,V3_) /* C0-3: In row, out col; V0-3: Scratch. */ \
     vunpcklpd(C1, C0, ymm(V0_)) /* Unpack bientries into V0: { C0[0], C1[0], C0[2], C1[2] } */ \
@@ -189,173 +150,85 @@
     vextractf128(imm(0x1), ymm(D0_), xmm(D2_)) /* Extract last half of D0 into D2 */ \
     vextractf128(imm(0x1), ymm(D1_), xmm(D3_)) /* Extract last half of D1 into D3 */
 
-#define CCOL_4V_nz(C0,C1,C2,C3,VBETA,CADDR,CSC,CSC3) \
-    vfmadd231pd(mem(CADDR), VBETA, C0) /* Column 0, 0:4 */ \
-    vfmadd231pd(mem(CADDR, CSC, 1), VBETA, C1) /* Column 1, 0:4 */ \
-    vfmadd231pd(mem(CADDR, CSC, 2), VBETA, C2) /* Column 2, 0:4 */ \
-    vfmadd231pd(mem(CADDR, CSC3, 1), VBETA, C3) /* Column 3, 0:4 */ \
-    vmovupd(C0, mem(CADDR)) \
-    vmovupd(C1, mem(CADDR, CSC, 1)) \
-    vmovupd(C2, mem(CADDR, CSC, 2)) \
-    vmovupd(C3, mem(CADDR, CSC3, 1))
+// Using scratch ymm0, ymm1, ymm2, ymm3. Beta to be reloaded.
+#define C1COL_STORE_1(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    DTRANSPOSE_4X4(ymm(C00_),C10,C20,C30,0,1,2,3) \
+    BETA_ ## BETA ( vbroadcastsd(mem(BETAADDR), ymm3) ) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR), ymm3, ymm(C00_)) ) \
+    vmovupd(ymm(C00_), mem(CADDR)) \
+    DTRANSPOSE_2X4(0,1,2,C00_,C40,C50) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4), xmm3, xmm0) ) \
+    vmovupd(xmm0, mem(CADDR4))
 
-#define CCOL_4V_z(C0,C1,C2,C3,VBETA,CADDR,CSC,CSC3) \
-    vmovupd(C0, mem(CADDR)) \
-    vmovupd(C1, mem(CADDR, CSC, 1)) \
-    vmovupd(C2, mem(CADDR, CSC, 2)) \
-    vmovupd(C3, mem(CADDR, CSC3, 1))
+#define C1COL_STORE_2(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_1(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC, 1), ymm3, C10) ) \
+    vmovupd(C10, mem(CADDR, CSC, 1)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC, 1), xmm3, xmm1) ) \
+    vmovupd(xmm1, mem(CADDR4, CSC, 1))
 
-#define BETA_nz(_1) _1
-#define BETA_z(_1)
+#define C1COL_STORE_3(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_2(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC, 2), ymm3, C20) ) \
+    vmovupd(C20, mem(CADDR, CSC, 2)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC, 2), xmm3, xmm2) ) \
+    vmovupd(xmm2, mem(CADDR4, CSC, 2))
 
-// In-reg transpose needs implementing case-by-case.
-#define CSTORECOL_LOC_6(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    DTRANSPOSE_4X4(ymm(C00_), C10, C20, C30, 0, 1, 2, VBETA_) \
-    BETA_ ## BETA ( vbroadcastsd(mem(BETAADDR), ymm(VBETA_)) ) /* Reload beta */ \
-    CCOL_4V_ ## BETA (ymm(C00_), C10, C20, C30, ymm(VBETA_), CADDR, CSC, CSC3) \
-    lea(mem(CADDR, CSC, 4), CADDR) /* CADDR forward 4 cols to the next 4x4 block */ \
-    DTRANSPOSE_2X4(0, 1, 2, C00_, ymm(C40_), ymm(C50_)) /* VBETA holds beta. Use spare */ \
-    CCOL_4V_ ## BETA (xmm0, xmm1, xmm2, xmm(C00_), xmm(VBETA_), CADDR4, CSC, CSC3) \
-    lea(mem(CADDR4, CSC, 4), CADDR4) /* CADDR4 forward 4 cols to the next 2x4 block */ \
-    DTRANSPOSE_4X4(C01, C11, C21, C31, 0, 1, 2, C00_) \
-    CCOL_4V_ ## BETA (C01, C11, C21, C31, ymm(VBETA_), CADDR, CSC, CSC3) \
-    DTRANSPOSE_2X4(0, 1, 2, C00_, ymm(C41_), ymm(C51_)) \
-    CCOL_4V_ ## BETA (xmm0, xmm1, xmm2, xmm(C00_), xmm(VBETA_), CADDR4, CSC, CSC3)
+#define C1COL_STORE_4(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_3(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC3, 1), ymm3, C30) ) \
+    vmovupd(C30, mem(CADDR, CSC3, 1)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC3, 1), xmm3, xmm(C00_)) ) \
+    vmovupd(xmm(C00_), mem(CADDR4, CSC3, 1))
 
-#define CSTORECOL_LOC_5(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    /* Here: ymm0-2 used additionally as scratch. Don't occupy them outside. */ \
-    /* Transpose bulk part. */ \
-    DTRANSPOSE_4X4(ymm(C00_),C10,C20,C30,0,1,2,C50_) \
-    DTRANSPOSE_4X4(    C01,  C11,C21,C31,0,1,2,C50_) \
-    /* Store block 1. */ \
-    CCOL_4V_ ## BETA (ymm(C00_),C10,C20,C30,ymm(VBETA_),CADDR,CSC,CSC3) \
-    lea(mem(CADDR, CSC, 4), CADDR) \
-    vpermpd(imm(0b01010101), ymm(C40_), ymm0) \
-    vpermpd(imm(0b10101010), ymm(C40_), ymm1) \
-    vpermpd(imm(0b11111111), ymm(C40_), ymm2) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4), xmm(C50_)) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC, 1), xmm(C51_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm(C40_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm0) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC, 2), xmm(C50_)) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC3, 1), xmm(C51_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm1) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm2) ) \
-    vmovsd(xmm(C40_), mem(CADDR4)) \
-    vmovsd(xmm0, mem(CADDR4, CSC, 1)) \
-    vmovsd(xmm1, mem(CADDR4, CSC, 2)) \
-    vmovsd(xmm2, mem(CADDR4, CSC3, 1)) \
+#define C1COL_STORE_5(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_4(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    lea(mem(CADDR,  CSC, 4), CADDR) \
     lea(mem(CADDR4, CSC, 4), CADDR4) \
-    /* Store block 2. */ \
-    CCOL_4V_ ## BETA (C01,C11,C21,C31,ymm(VBETA_),CADDR,CSC,CSC3) \
-    vpermpd(imm(0b01010101), ymm(C41_), ymm0) \
-    vpermpd(imm(0b10101010), ymm(C41_), ymm1) \
-    vpermpd(imm(0b11111111), ymm(C41_), ymm2) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4), xmm(C50_)) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC, 1), xmm(C51_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm(C41_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm0) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC, 2), xmm(C50_)) ) \
-    BETA_ ## BETA ( vmovsd(mem(CADDR4, CSC3, 1), xmm(C51_)) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm1) ) \
-    BETA_ ## BETA ( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm2) ) \
-    vmovsd(xmm(C41_), mem(CADDR4)) \
-    vmovsd(xmm0, mem(CADDR4, CSC, 1)) \
-    vmovsd(xmm1, mem(CADDR4, CSC, 2)) \
-    vmovsd(xmm2, mem(CADDR4, CSC3, 1))
+    DTRANSPOSE_4X4(C01,C11,C21,C31,0,1,2,C00_) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR), ymm3, C01) ) \
+    vmovupd(C01, mem(CADDR)) \
+    DTRANSPOSE_2X4(0,1,2,C00_,C41,C51) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4), xmm3, xmm0) ) \
+    vmovupd(xmm0, mem(CADDR4))
 
-#define CSTORECOL_LOC_4(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    /* Transpose bulk part. */ \
-    DTRANSPOSE_4X4(ymm(C00_),C10,C20,C30,0,1,2,C50_) \
-    DTRANSPOSE_4X4(    C01,  C11,C21,C31,0,1,2,C50_) \
-    CCOL_4V_ ## BETA (ymm(C00_),C10,C20,C30,ymm(VBETA_),CADDR,CSC,CSC3) \
-    lea(mem(CADDR, CSC, 4), CADDR) \
-    CCOL_4V_ ## BETA (C01,C11,C21,C31,ymm(VBETA_),CADDR,CSC,CSC3)
+#define C1COL_STORE_6(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_5(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC, 1), ymm3, C11) ) \
+    vmovupd(C11, mem(CADDR, CSC, 1)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC, 1), xmm3, xmm1) ) \
+    vmovupd(xmm1, mem(CADDR4, CSC, 1))
 
-#define CSTORECOL_LOC_3(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    /* Transpose bulk part. */ \
-    DTRANSPOSE_4X4(ymm(C00_),C10,C20,C30,0,1,2,C50_) \
-    DTRANSPOSE_4X4(    C01,  C11,C21,C31,0,1,2,C50_) \
-    /* Prepare mask */ \
-    mov(imm(0b00000000111111111111111111111111), CADDR4) \
-    vmovd(CADDR4, xmm(C50_)) \
-    vpmovsxbq(xmm(C50_), ymm(C50_)) \
-    /* Store block 1. */ \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR), ymm(C50_), ymm0) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC, 1), ymm(C50_), ymm1) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC, 2), ymm(C50_), ymm2) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC3, 1), ymm(C50_), ymm(C51_)) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm0, ymm(VBETA_), ymm(C00_)) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm1, ymm(VBETA_),     C10) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm2, ymm(VBETA_),     C20) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm(C51_), ymm(VBETA_), C30) ) \
-    vmaskmovpd(ymm(C00_), ymm(C50_), mem(CADDR)) \
-    vmaskmovpd(    C10,   ymm(C50_), mem(CADDR, CSC, 1)) \
-    vmaskmovpd(    C20,   ymm(C50_), mem(CADDR, CSC, 2)) \
-    vmaskmovpd(    C30,   ymm(C50_), mem(CADDR, CSC3, 1)) \
-    lea(mem(CADDR, CSC, 4), CADDR) \
-    /* Store block 2. */ \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR), ymm(C50_), ymm0) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC, 1), ymm(C50_), ymm1) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC, 2), ymm(C50_), ymm2) ) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, CSC3, 1), ymm(C50_), ymm(C51_)) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm0, ymm(VBETA_), C01) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm1, ymm(VBETA_), C11) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm2, ymm(VBETA_), C21) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm(C51_), ymm(VBETA_), C31) ) \
-    vmaskmovpd(C01, ymm(C50_), mem(CADDR)) \
-    vmaskmovpd(C11, ymm(C50_), mem(CADDR, CSC, 1)) \
-    vmaskmovpd(C21, ymm(C50_), mem(CADDR, CSC, 2)) \
-    vmaskmovpd(C31, ymm(C50_), mem(CADDR, CSC3, 1))
+#define C1COL_STORE_7(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_6(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC, 2), ymm3, C21) ) \
+    vmovupd(C21, mem(CADDR, CSC, 2)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC, 2), xmm3, xmm2) ) \
+    vmovupd(xmm2, mem(CADDR4, CSC, 2))
 
-#define CSTORECOL_LOC_2(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    /* Transpose bulk part. */ \
-    DTRANSPOSE_2X4(0,1,2,C50_,ymm(C00_),C10) \
-    CCOL_4V_ ## BETA (xmm0,xmm1,xmm2,xmm(C50_),xmm(VBETA_),CADDR,CSC,CSC3) \
-    lea(mem(CADDR, CSC, 4), CADDR) \
-    DTRANSPOSE_2X4(0,1,2,C50_,C01,C11) \
-    CCOL_4V_ ## BETA (xmm0,xmm1,xmm2,xmm(C50_),xmm(VBETA_),CADDR,CSC,CSC3)
+#define C1COL_STORE_8(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    C1COL_STORE_7(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR, CSC3, 1), ymm3, C31) ) \
+    vmovupd(C31, mem(CADDR, CSC3, 1)) \
+    BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC3, 1), xmm3, xmm(C00_)) ) \
+    vmovupd(xmm(C00_), mem(CADDR4, CSC3, 1))
 
-#define CSTORECOL_LOC_1(BETA,C00_,C01,C10,C11,C20,C21,C30,C31,C40_,C41_,C50_,C51_,VBETA_,BETAADDR,CADDR,CADDR4,CSC,CSC3) \
-    /* Block 1. */ \
-    vpermpd(imm(0b01010101), ymm(C00_), ymm0) \
-    vpermpd(imm(0b10101010), ymm(C00_), ymm1) \
-    vpermpd(imm(0b11111111), ymm(C00_), ymm2) \
-    BETA_ ## BETA( vmovsd(mem(CADDR), xmm(C40_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC, 1), xmm(C41_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC, 2), xmm(C50_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC3, 1), xmm(C51_)) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C41_), xmm(VBETA_), xmm0) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm1) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm2) ) \
-    vmovsd( xmm0, mem(CADDR, CSC, 1) ) \
-    vmovsd( xmm1, mem(CADDR, CSC, 2) ) \
-    vmovsd( xmm2, mem(CADDR, CSC3, 1) ) \
-    vmovapd(ymm(C00_), ymm0) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C40_), xmm(VBETA_), xmm0) ) \
-    vmovsd( xmm0, mem(CADDR) ) \
-    lea(mem(CADDR, CSC, 4), CADDR) \
-    /* Block 2. */ \
-    vpermpd(imm(0b01010101), C01, ymm0) \
-    vpermpd(imm(0b10101010), C01, ymm1) \
-    vpermpd(imm(0b11111111), C01, ymm2) \
-    BETA_ ## BETA( vmovsd(mem(CADDR), xmm(C40_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC, 1), xmm(C41_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC, 2), xmm(C50_)) ) \
-    BETA_ ## BETA( vmovsd(mem(CADDR, CSC3, 1), xmm(C51_)) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C41_), xmm(VBETA_), xmm0) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C50_), xmm(VBETA_), xmm1) ) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C51_), xmm(VBETA_), xmm2) ) \
-    vmovsd( xmm0, mem(CADDR, CSC, 1) ) \
-    vmovsd( xmm1, mem(CADDR, CSC, 2) ) \
-    vmovsd( xmm2, mem(CADDR, CSC3, 1) ) \
-    vmovapd(C01, ymm0) \
-    BETA_ ## BETA( vfmadd231pd(xmm(C40_), xmm(VBETA_), xmm0) ) \
-    vmovsd( xmm0, mem(CADDR) )
+#define DGENMASK_1(V_,RTMP)
+#define DGENMASK_2(V_,RTMP)
+#define DGENMASK_4(V_,RTMP)
+#define DGENMASK_5(V_,RTMP)
+#define DGENMASK_6(V_,RTMP)
+#define DGENMASK_7(V_,RTMP) DGENMASK_3(V_,RTMP)
+#define DGENMASK_8(V_,RTMP)
+
+#define DGENMASK_3(V_,RTMP) \
+    mov(imm(0b00000000111111111111111111111111), RTMP) \
+    vmovd(RTMP, xmm(V_)) \
+    vpmovsxbq(xmm(V_), ymm(V_))
 
 // Define microkernel here.
 // It will be instantiated multiple times by the millikernel assembly.
-#define DGEMM_6X8M_UKER_LOC(M,PACKA,PACKB,BAlign,LABEL_SUFFIX) \
+#define DGEMM_6X8M_UKER_LOC(N,PACKA,PACKB,BAlign,LABEL_SUFFIX) \
     /* The microkernel code does not take care of loading a-related address.
      * The millikernel asm takes care of forwarding A & C to the location required,
      * + C addresses aught to be stored as well.
@@ -411,27 +284,27 @@
 \
     label(.DK_4LOOP_INIT_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 1, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 2, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r12, 1, 5*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(rsi) \
     je(.DK_LEFT_LOOP_PREP_ ## LABEL_SUFFIX) \
 \
     label(.DK_4LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 1, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r9, 2, 5*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         prefetch(0, mem(r8, r12, 1, 5*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(rsi) \
     jne(.DK_4LOOP_ ## LABEL_SUFFIX) \
 \
@@ -441,12 +314,23 @@
     jmp(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
 \
     label(.DEMPTYALL_ ## LABEL_SUFFIX) \
-        vzeroall() \
+        vxorpd(ymm4,  ymm4,  ymm4) \
+        vxorpd(ymm5,  ymm5,  ymm5) \
+        vxorpd(ymm6,  ymm6,  ymm6) \
+        vxorpd(ymm7,  ymm7,  ymm7) \
+        vxorpd(ymm8,  ymm8,  ymm8) \
+        vxorpd(ymm9,  ymm9,  ymm9) \
+        vxorpd(ymm10, ymm10, ymm10) \
+        vxorpd(ymm11, ymm11, ymm11) \
+        vxorpd(ymm12, ymm12, ymm12) \
+        vxorpd(ymm13, ymm13, ymm13) \
+        vxorpd(ymm14, ymm14, ymm14) \
+        vxorpd(ymm15, ymm15, ymm15) \
 \
     label(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 5*8)) \
         add(r9, r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(N,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
         dec(r14) \
     jne(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
 \
@@ -462,7 +346,7 @@
     mov(var(beta), rbx) \
     mov(var(b_next), rdx) \
     vbroadcastsd(mem(rax), ymm0) \
-    vbroadcastsd(mem(rbx), ymm3) \
+    vbroadcastsd(mem(rbx), ymm2) \
 \
         vmulpd(ymm0, ymm4, ymm4) \
         vmulpd(ymm0, ymm5, ymm5) \
@@ -489,19 +373,25 @@
     lea(mem(rcx, rdi, 4), r14) /* load address of c + 4*rs_c; */ \
     lea(mem(rsi, rsi, 2), r13) /* r13 = 3*cs_c; */ \
 \
+    DGENMASK_## N (3,r15) /* ymm3 is mask when n == 3 or n == 7. */ \
     vxorpd(ymm0, ymm0, ymm0) /* set ymm0 to zero. */ \
-    vucomisd(xmm0, xmm3) /* set ZF if beta == 0. */ \
+    vucomisd(xmm0, xmm2) /* set ZF if beta == 0. */ \
     je(.DBETAZERO_ ## LABEL_SUFFIX) /* if ZF = 1, jump to beta == 0 case */ \
 \
         cmp(imm(8), rdi) /* set ZF if (8*rs_c) == 8. */ \
         jz(.DCOLSTORED_ ## LABEL_SUFFIX) /* jump to column storage case */ \
 \
-            CSTORE_LOC_## M (rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 4, 5, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 6, 7, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 8, 9, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 10, 11, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 12, 13, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(nz, 14, 15, 2, ymm3, rcx, rdi) \
             jmp(.DDONE_ ## LABEL_SUFFIX) \
 \
         label(.DCOLSTORED_ ## LABEL_SUFFIX) \
 \
-            CSTORECOL_LOC_## M (nz,4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,12,13,14,15,3,rbx,rcx,r14,rsi,r13) \
+            C1COL_STORE_ ## N (nz,4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,rbx,rcx,r14,rsi,r13) \
             jmp(.DDONE_ ## LABEL_SUFFIX) \
 \
     label(.DBETAZERO_ ## LABEL_SUFFIX) \
@@ -509,19 +399,24 @@
         cmp(imm(8), rdi) /* set ZF if (8*rs_c) == 8. */ \
         jz(.DCOLSTORBZ_ ## LABEL_SUFFIX) /* jump to column storage case */ \
 \
-            CSTOREZB_LOC_## M (rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 4, 5, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 6, 7, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 8, 9, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 10, 11, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 12, 13, 2, ymm3, rcx, rdi) \
+            C1ROW_FWD_ ## N(z, 14, 15, 2, ymm3, rcx, rdi) \
             jmp(.DDONE_ ## LABEL_SUFFIX) \
 \
         label(.DCOLSTORBZ_ ## LABEL_SUFFIX) \
 \
-            CSTORECOL_LOC_## M (z,4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,12,13,14,15,3,rbx,rcx,r14,rsi,r13) \
+            C1COL_STORE_ ## N (z,4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,rbx,rcx,r14,rsi,r13) \
 \
     label(.DDONE_ ## LABEL_SUFFIX)
 
 // Start defining the millikernel.
 // This is the asm entry point for x86.
-#define GENDEF(PACKA,BAlign_,BAlign__) \
-BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
+#define GENDEF(N,PACKA,BAlign_,BAlign__) \
+BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAlign_ \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -578,7 +473,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
     je(.DM_LEFT) \
     test(rdi, rdi) \
     je(.DM_ITER) \
-    DGEMM_6X8M_UKER_LOC(6,PACKA,pack,noalign,init) \
+    DGEMM_6X8M_UKER_LOC(N,PACKA,pack,noalign,init) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
@@ -601,7 +496,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
 \
     /* Microkernels in between */ \
     label(.DM_ITER) \
-    DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,BAlign_,iter) \
+    DGEMM_6X8M_UKER_LOC(N,PACKA,nopack,BAlign_,iter) \
     mov(var(m_iter), rsi) \
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
@@ -629,19 +524,10 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
     mov(var(a_next), r8) /* Override a_next w/ next millikernel. */ \
     mov(var(cs_a2), r9) /* Override cs_a_next w/ next millikernel. */ \
     mov(var(m_left), rsi) \
-    cmp(imm(6), rsi) jz(.D6X8_GEMM_UKR) \
-    cmp(imm(5), rsi) jz(.D5X8_GEMM_UKR) \
-    cmp(imm(4), rsi) jz(.D4X8_GEMM_UKR) \
-    cmp(imm(3), rsi) jz(.D3X8_GEMM_UKR) \
-    cmp(imm(2), rsi) jz(.D2X8_GEMM_UKR) \
-    jmp(.D1X8_GEMM_UKR) \
-    /* TODO: Consider aligned cases here? */ \
-    label(.D6X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(6,PACKA,nopack,BAlign__,fin6) jmp(.DME) \
-    label(.D5X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(5,PACKA,nopack,BAlign__,fin5) jmp(.DME) \
-    label(.D4X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(4,PACKA,nopack,BAlign__,fin4) jmp(.DME) \
-    label(.D3X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(3,PACKA,nopack,BAlign__,fin3) jmp(.DME) \
-    label(.D2X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(2,PACKA,nopack,BAlign__,fin2) jmp(.DME) \
-    label(.D1X8_GEMM_UKR) DGEMM_6X8M_UKER_LOC(1,PACKA,nopack,BAlign__,fin1) \
+    cmp(imm(6), rsi) \
+    jne(.DME) /* TODO: Consider aligned case? Merge this? */ \
+    DGEMM_6X8M_UKER_LOC(N,PACKA,nopack,BAlign__,fin) \
+    movq(imm(0), var(m_left)) \
 \
     label(.DME) \
 \
@@ -651,9 +537,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
       [rs_b]  "+m" (rs_b), \
       [c]     "+m" (c), \
       [a_p]   "+m" (a_p), \
-      [m_iter]"+m" (m_iter) \
-    : [m_left] "m" (m_left), \
-      [rs_a]   "m" (rs_a), \
+      [m_iter]"+m" (m_iter), \
+      [m_left]"+m" (m_left) \
+    : [rs_a]   "m" (rs_a), \
       [cs_a]   "m" (cs_a), \
       [cs_a2]  "m" (cs_a_next), \
       [ps_a]   "m" (ps_a), \
@@ -678,13 +564,32 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x8m_ ## PACKA ## _ ## BAlign_ \
       "memory" \
     ) \
 \
+    if ( m_left ) \
+    { assert( 0 ); } \
+\
 }
 
-GENDEF(pack,align,noalign) // Packing milliker can have edge case unaligned? TODO: Caller exclusion.
-GENDEF(nopack,align,align)
-GENDEF(nopack,noalign,noalign)
+// Packing milliker can have edge case unaligned? TODO: Caller exclusion.
+GENDEF(8,pack,align,noalign)
 
-#if 1
+GENDEF(8,nopack,align,align)
+GENDEF(7,nopack,align,align)
+GENDEF(6,nopack,align,align)
+GENDEF(5,nopack,align,align)
+GENDEF(4,nopack,align,align)
+GENDEF(3,nopack,align,align)
+GENDEF(2,nopack,align,align)
+GENDEF(1,nopack,align,align)
+
+GENDEF(8,nopack,noalign,noalign)
+GENDEF(7,nopack,noalign,noalign)
+GENDEF(6,nopack,noalign,noalign)
+GENDEF(5,nopack,noalign,noalign)
+GENDEF(4,nopack,noalign,noalign)
+GENDEF(3,nopack,noalign,noalign)
+GENDEF(2,nopack,noalign,noalign)
+GENDEF(1,nopack,noalign,noalign)
+
 void bli_dgemmsup2_rv_haswell_asm_6x8m
     (
      dim_t            m,
@@ -707,101 +612,44 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
 #endif
+    const int b_align = (((uint64_t)b % (4*8)) + rs_b0 % 4) == 0;
 
-    if ( n == 8 ) {
-        if ( pack_a )
-            bli_dgemmsup2_rv_haswell_asm_6x8m_pack_align
-                ( m, n, k, alpha,
-                  a, rs_a0, cs_a0,
-                  b, rs_b0, cs_b0, beta,
-                  c, rs_c0, cs_c0,
-                  data, cntx, a_p, b_p, pack_b );
-        else {
-            if ( ((uint64_t)b % (4*8)) + rs_b0 % 4 )
-                // No packing at all.
-                bli_dgemmsup2_rv_haswell_asm_6x8m_nopack_noalign
-                    ( m, n, k, alpha,
-                      a, rs_a0, cs_a0,
-                      b, rs_b0, cs_b0, beta,
-                      c, rs_c0, cs_c0,
-                      data, cntx, a_p, b_p, pack_b );
-            else
-                // Fully packed.
-                bli_dgemmsup2_rv_haswell_asm_6x8m_nopack_align
-                    ( m, n, k, alpha,
-                      a, rs_a0, cs_a0,
-                      b, rs_b0, cs_b0, beta,
-                      c, rs_c0, cs_c0,
-                      data, cntx, a_p, b_p, pack_b );
-        }
-    } else {
-        assert( 0 );
-#if 0
-        const void * a_next_orig = bli_auxinfo_next_a( data );
-        const void * b_next_orig = bli_auxinfo_next_b( data );
-        const uint64_t ps_a      = bli_auxinfo_ps_a( data );
-        const uint64_t cs_a_next = bli_auxinfo_ps_b( data );
-
-        for ( ; m >= 6; m -= 6 ) {
-            if ( m > 6 ) {
-                bli_auxinfo_set_next_a( a + ps_a, data );
-                bli_auxinfo_set_next_b( b, data );
-                bli_auxinfo_set_ps_a( cs_a0, data );
-            } else {
-                bli_auxinfo_set_next_a( a_next_orig, data );
-                bli_auxinfo_set_next_b( b_next_orig, data );
-                bli_auxinfo_set_ps_a( cs_a_next, data );
-            }
-
-            bli_dgemmsup2_rv_haswell_asm_6x8rn
-                (
-                 6, n, k, alpha,
-                 a, rs_a0, cs_a0,
-                 b, rs_b0, cs_b0, beta,
-                 c, rs_c0, cs_c0,
-                 data, cntx,
-                 a_p, 0, // pack_a
-                 b_p, pack_b
-                );
-            a += ps_a; // No need to a_p
-            c += 6 * rs_c0;
-            if ( pack_b && b_p != b ) {
-                b = b_p;
-                rs_b0 = 8;
-                cs_b0 = 1;
-            }
-        }
-
-        if ( m > 0 ) {
-            bli_auxinfo_set_next_a( a_next_orig, data );
-            bli_auxinfo_set_next_b( b_next_orig, data );
-            bli_auxinfo_set_ps_a( cs_a_next, data );
-
-            double c_t[6*8];
-            double one = 1.0;
-            double zero = 0.0;
-
-            bli_dgemmsup2_rv_haswell_asm_6x8rn
-                (
-                 6, n, k, &one,
-                 a, rs_a0, cs_a0,
-                 b, rs_b0, cs_b0, &zero,
-                 c_t, 8, 1,
-                 data, cntx,
-                 a_p, 0, // pack_a
-                 b_p, pack_b
-                );
-            for ( int i = 0; i < m; ++i )
-                for ( int j = 0; j < n; ++j )
-                    c[ rs_c0 * i + cs_c0 * j ] =
-                        c[ rs_c0 * i + cs_c0 * j ] * *beta +
-                            c_t[ 8 * i + j ] * *alpha;
-        }
-        bli_auxinfo_set_ps_a( ps_a, data );
-        bli_auxinfo_set_ps_b( cs_a_next, data );
+    switch ( pack_a << 13 | b_align << 12 | n ) {
+#define EXPAND_CASE(N,PACKA_C,BAlign_C,PACKA,BAlign) \
+        case ( PACKA_C << 13 | BAlign_C << 12 | N ): \
+            /* Fully packed. */ \
+            bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_## PACKA ##_## BAlign \
+                ( m, n, k, alpha, \
+                  a, rs_a0, cs_a0, \
+                  b, rs_b0, cs_b0, beta, \
+                  c, rs_c0, cs_c0, \
+                  data, cntx, a_p, b_p, pack_b ); \
+            break;
+        case ( 1 << 13 | 1 << 12 | 8 ):
+        EXPAND_CASE(8, 1, 0, pack, align) // Use aligned kernel regardless b_align.
+        EXPAND_CASE(8, 0, 1, nopack, align)
+        EXPAND_CASE(8, 0, 0, nopack, noalign)
+        EXPAND_CASE(7, 0, 1, nopack, align) // Edge kernels require no packing.
+        EXPAND_CASE(7, 0, 0, nopack, noalign)
+        EXPAND_CASE(6, 0, 1, nopack, align)
+        EXPAND_CASE(6, 0, 0, nopack, noalign)
+        EXPAND_CASE(5, 0, 1, nopack, align)
+        EXPAND_CASE(5, 0, 0, nopack, noalign)
+        EXPAND_CASE(4, 0, 1, nopack, align)
+        EXPAND_CASE(4, 0, 0, nopack, noalign)
+        EXPAND_CASE(3, 0, 1, nopack, align)
+        EXPAND_CASE(3, 0, 0, nopack, noalign)
+        EXPAND_CASE(2, 0, 1, nopack, align)
+        EXPAND_CASE(2, 0, 0, nopack, noalign)
+        EXPAND_CASE(1, 0, 1, nopack, align)
+        EXPAND_CASE(1, 0, 0, nopack, noalign)
+        default:
+#ifdef DEBUG
+            fprintf( stderr, "error: n=%ld,pa=%d,ab=%d\n", n, pack_a, b_align );
+            assert( 0 );
 #endif
+            break;
     }
 }
-#endif
 
 #endif
