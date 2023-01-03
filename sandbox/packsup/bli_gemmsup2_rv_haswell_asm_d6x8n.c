@@ -575,7 +575,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     mov(var(b_p), rdx) \
     mov(var(pack_a), rdi) \
     mov(var(n_iter), rsi) \
-    cmp(imm(1), rsi) \
+    mov(var(n_left), r15) \
+    lea(mem(r15, rsi, 8), r15) /* r15 = n_left + 8*n_iter */ \
+    cmp(imm(1*8), r15) /* Prefetch next millikernel if n_iter==1 with no n_left. */ \
     je(.DN_BEFORE_INIT_NEXT_IS_FINAL) \
         mov(rbx, r8) \
         add(var(ps_b2), r8) \
@@ -589,6 +591,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     je(.DN_ITER) \
     DGEMM_6X8N_UKER_LOC(M,pack,PACKB,BAlign,init) \
     mov(var(n_iter), rsi) \
+    mov(var(n_left), r15) \
     mov(var(b), rbx) /*********** Prepare b for next uker */ \
     mov(var(ps_b), rdi) /******** Prepare b for next uker */ \
     lea(mem(rbx, rdi, 1), rbx) /* Prepare b for next uker */ \
@@ -597,7 +600,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     mov(var(c), rcx) /*********** Prepare c for next uker */ \
     mov(var(cs_c), r13) /******** Prepare c for next uker */ \
     lea(mem(rcx, r13, 8), rcx) /* Prepare c for next uker */ \
-    cmp(imm(2), rsi) \
+    lea(mem(r15, rsi, 8), r15) \
+    cmp(imm(2*8), r15) \
     je(.DN_INIT_NEXT_IS_FINAL) \
         mov(rbx, r8) \
         add(var(ps_b2), r8) \
@@ -618,6 +622,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     label(.DN_ITER) \
     DGEMM_6X8N_UKER_LOC(M,nopack,PACKB,BAlign,iter) \
     mov(var(n_iter), rsi) \
+    mov(var(n_left), r15) \
     mov(var(b), rbx) /*********** Prepare b for next uker */ \
     mov(var(ps_b), rdi) /******** Prepare b for next uker */ \
     lea(mem(rbx, rdi, 1), rbx) /* Prepare b for next uker */ \
@@ -626,7 +631,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     mov(var(c), rcx) /*********** Prepare c for next uker */ \
     mov(var(cs_c), r13) /******** Prepare c for next uker */ \
     lea(mem(rcx, r13, 8), rcx) /* Prepare c for next uker */ \
-    cmp(imm(2), rsi) \
+    lea(mem(r15, rsi, 8), r15) \
+    cmp(imm(2*8), r15) \
     je(.DN_ITER_NEXT_IS_FINAL) \
         mov(rbx, r8) \
         add(var(ps_b2), r8) \
