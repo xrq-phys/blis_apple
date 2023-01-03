@@ -18,7 +18,10 @@
 #define VMOV_align vmovapd
 #define VMOV_noalign vmovupd
 
-#define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+#define BRANCH_noj(_1)
+#define BRANCH_j(_1) _1
+
+#define DGEMM_6X8_NANOKER(INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
     INST (ymm(A0_), B0, C00) \
@@ -48,6 +51,9 @@
     PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
     PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
+\
+    BRANCH_ ##Branch ( dec(Counter) ) \
+    BRANCH_ ##Branch ( je(.D ## ELabel ##_## ELSuffix) ) \
     VMOV_ ## BAlign (mem(BADDR    ), B0) \
     VMOV_ ## BAlign (mem(BADDR, 32), B1) \
     add(RSB, BADDR)
@@ -93,37 +99,33 @@
     INST (ymm(A0_), B1, C41) \
     PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 4*8)))
 
-#define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+#define DGEMM_MX8_NANOKER(M,INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) \
     DGEMM_MX8_NANOKER_ALINE_## M (INST,C00,C01,C10,C11,C20,C21,C30,C31,C40,C41,C50,C51,A0_,A1_,B0,B1,AADDR,RSA,RSA3,RSA5,CSA,PAADDR,PACKA) \
     add(CSA, AADDR) \
     PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
     PACK_ ##PACKB (vmovapd(B0, mem(PBADDR    ))) \
     PACK_ ##PACKB (vmovapd(B1, mem(PBADDR, 32))) \
     PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
+\
+    BRANCH_ ##Branch ( dec(Counter) ) \
+    BRANCH_ ##Branch ( je(.D ## ELabel ##_## ELSuffix) ) \
     VMOV_ ## BAlign (mem(BADDR    ), B0) \
     VMOV_ ## BAlign (mem(BADDR, 32), B1) \
     add(RSB, BADDR)
 
-#define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
+#define DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) \
+    DGEMM_6X8_NANOKER(INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
 
-#define DGEMM_MX8_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER(M,INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) \
+    DGEMM_MX8_NANOKER(M,INST,ymm4,ymm5,ymm6,ymm7,ymm8,ymm9,ymm10,ymm11,ymm12,ymm13,ymm14,ymm15,0,1,ymm2,ymm3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
 
-#define DGEMM_MX8_NANOKER_LOC_1(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(1,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_2(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(2,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_3(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(3,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_4(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(4,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_5(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC(5,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_MX8_NANOKER_LOC_6(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
-#define DGEMM_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_MX8_NANOKER_LOC_## M(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign)
+#define DGEMM_MX8_NANOKER_LOC_1(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC(1,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_MX8_NANOKER_LOC_2(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC(2,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_MX8_NANOKER_LOC_3(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC(3,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_MX8_NANOKER_LOC_4(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC(4,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_MX8_NANOKER_LOC_5(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC(5,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_MX8_NANOKER_LOC_6(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_6X8_NANOKER_LOC(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
+#define DGEMM_NANOKER_LOC(M,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch) DGEMM_MX8_NANOKER_LOC_## M(INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign,Counter,ELabel,ELSuffix,Branch)
 
 #define C1ROW_BETA_FWD(VFH,VLH,VBETA,CADDR,CSC) \
     vfmadd231pd(mem(CADDR), VBETA, VFH) \
@@ -402,43 +404,34 @@
     mov(var(k_iter), rsi) \
     mov(var(k_left), r14) \
 \
+    test(rsi, rsi) \
+    je(.DEMPTYALL_ ## LABEL_SUFFIX) \
     VMOV_ ## BAlign (mem(rbx), ymm2) \
     VMOV_ ## BAlign (mem(rbx, 32), ymm3) \
     add(r11, rbx) \
 \
-    test(rsi, rsi) \
-    je(.DEMPTYALL_ ## LABEL_SUFFIX) \
-\
     label(.DK_4LOOP_INIT_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vmulpd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r9, 1, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r9, 2, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r12, 1, 7*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
-        dec(rsi) \
-    je(.DK_LEFT_LOOP_PREP_ ## LABEL_SUFFIX) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,rsi,K_LEFT_LOOP_PREP,LABEL_SUFFIX,j) \
 \
     label(.DK_4LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r9, 1, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r9, 2, 7*8)) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,_,_,_,noj) \
         prefetch(0, mem(r8, r12, 1, 7*8)) \
         lea(mem(r8, r9, 4), r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
-        dec(rsi) \
-    jne(.DK_4LOOP_ ## LABEL_SUFFIX) \
-\
-    label(.DK_LEFT_LOOP_PREP_ ## LABEL_SUFFIX) \
-    test(r14, r14) \
-    je(.DWRITEMEM_PREP_ ## LABEL_SUFFIX) \
-    jmp(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,rsi,K_LEFT_LOOP_PREP,LABEL_SUFFIX,j) \
+    jmp(.DK_4LOOP_ ## LABEL_SUFFIX) \
 \
     label(.DEMPTYALL_ ## LABEL_SUFFIX) \
         vxorpd(ymm4,  ymm4,  ymm4) \
@@ -454,12 +447,18 @@
         vxorpd(ymm14, ymm14, ymm14) \
         vxorpd(ymm15, ymm15, ymm15) \
 \
+    label(.DK_LEFT_LOOP_PREP_ ## LABEL_SUFFIX) \
+    test(r14, r14) \
+    je(.DWRITEMEM_PREP_ ## LABEL_SUFFIX) \
+    VMOV_ ## BAlign (mem(rbx), ymm2) \
+    VMOV_ ## BAlign (mem(rbx, 32), ymm3) \
+    add(r11, rbx) \
+\
     label(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
         prefetch(0, mem(r8, 7*8)) \
         add(r9, r8) \
-        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign) \
-        dec(r14) \
-    jne(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
+        DGEMM_NANOKER_LOC(M,vfmadd231pd,rdi,r13,r15,r10,r11,PACKA,PACKB,BAlign,r14,WRITEMEM_PREP,LABEL_SUFFIX,j) \
+    jmp(.DK_LEFT_LOOP_ ## LABEL_SUFFIX) \
 \
     label(.DWRITEMEM_PREP_ ## LABEL_SUFFIX) \
 \
