@@ -575,7 +575,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     mov(var(b_p), rdx) \
     mov(var(pack_a), rdi) \
     mov(var(n_iter), rsi) \
-    cmp(imm(2), rsi) \
+    cmp(imm(1), rsi) \
     je(.DN_BEFORE_INIT_NEXT_IS_FINAL) \
         mov(rbx, r8) \
         add(var(ps_b2), r8) \
