@@ -206,7 +206,7 @@ void bls_dgemm
                         a_uker = a_l2;
                         rs_a_uker = rs_a;
                         cs_a_uker = cs_a;
-                        bli_auxinfo_set_ps_a( rs_a * 6, &data );
+                        bli_auxinfo_set_ps_a( rs_a * mr, &data );
                     }
 
                     ukr_sup
