@@ -735,6 +735,8 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
                       data, cntx, a_p, b_p, pack_b );
         }
     } else {
+        assert( 0 );
+#if 0
         const void * a_next_orig = bli_auxinfo_next_a( data );
         const void * b_next_orig = bli_auxinfo_next_b( data );
         const uint64_t ps_a      = bli_auxinfo_ps_a( data );
@@ -797,6 +799,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8m
         }
         bli_auxinfo_set_ps_a( ps_a, data );
         bli_auxinfo_set_ps_b( cs_a_next, data );
+#endif
     }
 }
 #endif

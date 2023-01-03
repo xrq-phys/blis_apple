@@ -25,7 +25,8 @@ void funcname \
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 
 SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8m);
-SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8rn);
+SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8n);
+SUPKER_DECL(bli_dgemmsup2_cv_haswell_asm_8x6m);
 typedef typeof(&bli_dpackm_haswell_asm_8xk) l1mukr_t;
 typedef typeof(&bli_dgemm_haswell_asm_6x8) ukr_dgemm_bulk_t;
 typedef typeof(&bli_dgemmsup2_rv_haswell_asm_6x8m) ukr_dgemm_sup_t;

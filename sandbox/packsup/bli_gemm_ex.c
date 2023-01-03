@@ -37,18 +37,12 @@ void bli_gemm_ex
 		bli_obj_dt( alpha ) == BLIS_DOUBLE &&
 		bli_obj_dt( beta  ) == BLIS_DOUBLE )
 	{
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
-		// AVX2 has no column-6x8 kernel. Detect column-storage and transpose.
-		if ( ( bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b ) ) != 1 )
-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
-		/* TODO: For Arm, detect small-m and transpose into small-n?
+		/* TODO: Detect small-m and transpose into small-n.
+		 * TODO: For x86 only? It seems that arm64 does not need this.
 		if ( bli_obj_has_notrans( c ) ?
 			bli_obj_dim( BLIS_M, c ) + 8 < bli_obj_dim( BLIS_N, c ) :
 			bli_obj_dim( BLIS_N, c ) + 8 < bli_obj_dim( BLIS_M, c ) ) */
 		if ( false )
-#else
-		if ( false )
-#endif
 		{
 			// Call C' += B'A' <=> C += A B.
 			obj_t at, bt, ct;
@@ -101,6 +95,19 @@ void bli_gemm_ex
 			cs_c = bli_obj_row_stride( c );
 		}
 
+		dim_t mr, nr;
+		ukr_dgemm_sup_t milliker;
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+		if ( cs_b == 1 ) { mr = 6; nr = 8; milliker = bli_dgemmsup2_rv_haswell_asm_6x8m; }
+		else { mr = 8; nr = 6; milliker = bli_dgemmsup2_cv_haswell_asm_8x6m; }
+#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+		milliker = rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
+			bli_dgemmsup2_rv_armv8a_asm_8x6r; mr = 8; nr = 6;
+#else
+		// TODO: Use reference kernels.
+#error "This architecture is not supported yet."
+#endif
+
 		rntm_t rntm_l;
 		if ( rs_a == 1 || cs_b == 1 )
 		{
@@ -120,17 +127,7 @@ void bli_gemm_ex
 				bli_obj_buffer( beta ),
 				bli_obj_buffer( c ), rs_c, cs_c,
 				cntx, &rntm_l,
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
-				( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8m ),
-				6, 8
-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
-				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
-					bli_dgemmsup2_rv_armv8a_asm_8x6r,
-				8, 6
-#else
-				// TODO: Use reference kernels.
-#error "This architecture is not supported yet."
-#endif
+				milliker, mr, nr
 			);
 			return ;
 		}
