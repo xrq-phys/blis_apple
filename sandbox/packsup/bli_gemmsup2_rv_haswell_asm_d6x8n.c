@@ -18,39 +18,9 @@
 #define VMOV_align vmovapd
 #define VMOV_noalign vmovupd
 
-#define DGEMM_6X8_NANOKER_8(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
-    vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
-    vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C00_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C01_)) \
-    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), ymm(B0_), ymm(C10_)) \
-    INST (ymm(A1_), ymm(B1_), ymm(C11_)) \
-    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR))) \
-    vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
-    vbroadcastsd(mem(AADDR, RSA3,1), ymm(A1_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C20_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C21_)) \
-    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), ymm(B0_), ymm(C30_)) \
-    INST (ymm(A1_), ymm(B1_), ymm(C31_)) \
-    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 2*8))) \
-    vbroadcastsd(mem(AADDR, RSA, 4), ymm(A0_)) \
-    vbroadcastsd(mem(AADDR, RSA5,1), ymm(A1_)) \
-    add(CSA, AADDR) \
-    INST (ymm(A0_), ymm(B0_), ymm(C40_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C41_)) \
-    PACK_ ##PACKA (vunpcklpd(xmm(A1_), xmm(A0_), xmm(A0_))) \
-    INST (ymm(A1_), ymm(B0_), ymm(C50_)) \
-    INST (ymm(A1_), ymm(B1_), ymm(C51_)) \
-    PACK_ ##PACKA (vmovapd(xmm(A0_), mem(PAADDR, 4*8))) \
-    PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
-    PACK_ ##PACKB (vmovapd(ymm(B0_), mem(PBADDR    ))) \
-    PACK_ ##PACKB (vmovapd(ymm(B1_), mem(PBADDR, 32))) \
-    PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
+#define LOAD_BROW_8(BADDR,B0_,B1_,BAlign) \
     VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
-    VMOV_ ## BAlign (mem(BADDR, 32), ymm(B1_)) \
-    add(RSB, BADDR)
+    VMOV_ ## BAlign (mem(BADDR, 32), ymm(B1_))
 
 #define LOAD_BROW_6(BADDR,B0_,B1_,BAlign) \
     VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
@@ -60,22 +30,28 @@
     VMOV_ ## BAlign (mem(BADDR    ), ymm(B0_)) \
     vmovsd( mem(BADDR, 32), xmm(B1_))
 
+#define LOAD_BROW_7(BADDR,B0_,B1_,BAlign) LOAD_BROW_8(BADDR,B0_,B1_,BAlign)
 #define LOAD_BROW_4(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), ymm(B0_))
-#define LOAD_BROW_3(BADDR,B0_,B1_,BAlign) vmaskmovpd(mem(BADDR), ymm(B1_), ymm(B0_))
+#define LOAD_BROW_3(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), ymm(B0_))
 #define LOAD_BROW_2(BADDR,B0_,B1_,BAlign) VMOV_ ## BAlign (mem(BADDR), xmm(B0_))
 #define LOAD_BROW_1(BADDR,B0_,B1_,BAlign) vmovsd( mem(BADDR), xmm(B0_))
 
+#define FMA_ROW_8(INST,A_,B0_,B1_,C0_,C1_) \
+    INST (ymm(A_), ymm(B0_), ymm(C0_)) \
+    INST (ymm(A_), ymm(B1_), ymm(C1_))
+
 #define FMA_ROW_6(INST,A_,B0_,B1_,C0_,C1_) \
     INST (ymm(A_), ymm(B0_), ymm(C0_)) \
-    INST (xmm(A_), xmm(B1_), xmm(C1_)) \
+    INST (xmm(A_), xmm(B1_), xmm(C1_))
 
+#define FMA_ROW_7(INST,A_,B0_,B1_,C0_,C1_) FMA_ROW_8(INST,A_,B0_,B1_,C0_,C1_)
 #define FMA_ROW_5(INST,A_,B0_,B1_,C0_,C1_) FMA_ROW_6(INST,A_,B0_,B1_,C0_,C1_)
 #define FMA_ROW_4(INST,A_,B0_,B1_,C0_,C1_) INST (ymm(A_), ymm(B0_), ymm(C0_))
 #define FMA_ROW_3(INST,A_,B0_,B1_,C0_,C1_) INST (ymm(A_), ymm(B0_), ymm(C0_))
 #define FMA_ROW_2(INST,A_,B0_,B1_,C0_,C1_) INST (xmm(A_), xmm(B0_), xmm(C0_))
 #define FMA_ROW_1(INST,A_,B0_,B1_,C0_,C1_) INST (xmm(A_), xmm(B0_), xmm(C0_))
 
-#define DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
+#define DGEMM_6X8_NANOKER(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
     vbroadcastsd(mem(AADDR        ), ymm(A0_)) \
     vbroadcastsd(mem(AADDR, RSA, 1), ymm(A1_)) \
     FMA_ROW_## N (INST,A0_,B0_,B1_,C00_,C01_) \
@@ -100,67 +76,25 @@
     PACK_ ##PACKB (vmovapd(ymm(B1_), mem(PBADDR, 32))) \
     PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
     LOAD_BROW_## N (BADDR,B0_,B1_,BAlign) \
-    add(RSB, BADDR) \
-
-// This scheme supports 6, 5, 4, 3, 2, 1.
-#define DGEMM_6X8_NANOKER_5(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign)
-#define DGEMM_6X8_NANOKER_4(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign)
-#define DGEMM_6X8_NANOKER_3(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign)
-#define DGEMM_6X8_NANOKER_2(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign)
-#define DGEMM_6X8_NANOKER_1(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) DGEMM_6X8_NANOKER_6(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign)
-
-#define DGEMM_6X8_NANOKER_7(N,INST,C00_,C01_,C10_,C11_,C20_,C21_,C30_,C31_,C40_,C41_,C50_,C51_,A0_,A1_,B0_,B1_,AADDR,RSA,RSA3,RSA5,CSA,BADDR,RSB,PAADDR,PBADDR,PACKA,PACKB,BAlign) \
-    vbroadcastsd(mem(AADDR), ymm(A0_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C00_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C01_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR))) \
-    vbroadcastsd(mem(AADDR, RSA, 1), ymm(A0_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C10_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C11_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 1*8))) \
-    vbroadcastsd(mem(AADDR, RSA, 2), ymm(A0_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C20_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C21_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 2*8))) \
-    vbroadcastsd(mem(AADDR, RSA3,1), ymm(A0_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C30_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C31_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 3*8))) \
-    vbroadcastsd(mem(AADDR, RSA, 4), ymm(A0_)) \
-    INST (ymm(A0_), ymm(B0_), ymm(C40_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C41_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 4*8))) \
-    vbroadcastsd(mem(AADDR, RSA5,1), ymm(A0_)) \
-    add(CSA, AADDR) \
-    INST (ymm(A0_), ymm(B0_), ymm(C50_)) \
-    INST (ymm(A0_), ymm(B1_), ymm(C51_)) \
-    PACK_ ##PACKA (vmovsd(xmm(A0_), mem(PAADDR, 5*8))) \
-    PACK_ ##PACKA (add(imm(6*8), PAADDR)) \
-    PACK_ ##PACKB (vmovapd(ymm(B0_), mem(PBADDR    ))) \
-    PACK_ ##PACKB (vmovapd(ymm(B1_), mem(PBADDR, 32))) \
-    PACK_ ##PACKB (add(imm(8*8), PBADDR)) \
-    VMOV_ ## BAlign (mem(BADDR), ymm(B0_)) \
-    vmaskmovpd(mem(BADDR, 32), ymm(A1_), ymm(B1_)) \
-    add(RSB, BADDR) \
+    add(RSB, BADDR)
 
 #define DGEMM_NANOKER_LOC(N,INST,RSA,RSA3,RSA5,CSA,RSB,PACKA,PACKB,BAlign) \
-    DGEMM_6X8_NANOKER_ ## N(N,INST,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
+    DGEMM_6X8_NANOKER(N,INST,4,5,6,7,8,9,10,11,12,13,14,15,0,1,2,3,rax,RSA,RSA3,RSA5,CSA,rbx,RSB,rcx,rdx,PACKA,PACKB,BAlign)
 
 #define BETA_nz(_1) _1
 #define BETA_z(_1)
 
 #define C1ROW_FWD_8(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
     BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
-    vmovupd(ymm(VFH_), mem(CADDR)) \
     BETA_ ## BETA( vfmadd231pd(mem(CADDR, 32), ymm(VBETA_), ymm(VLH_)) ) \
+    vmovupd(ymm(VFH_), mem(CADDR)) \
     vmovupd(ymm(VLH_), mem(CADDR, 32)) \
     add(CSC, CADDR)
 
 #define C1ROW_FWD_7(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
     BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR, 32), ymm(VBETA_), ymm(VLH_)) ) \
     vmovupd(ymm(VFH_), mem(CADDR)) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR, 32), VMASK, ymm(VFH_)) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm(VFH_), ymm(VBETA_), ymm(VLH_)) ) \
     vmaskmovpd(ymm(VLH_), VMASK, mem(CADDR, 32)) \
     add(CSC, CADDR)
 
@@ -185,8 +119,7 @@
     add(CSC, CADDR)
 
 #define C1ROW_FWD_3(BETA,VFH_,VLH_,VBETA_,VMASK,CADDR,CSC) \
-    BETA_ ## BETA( vmaskmovpd(mem(CADDR), VMASK, ymm(VLH_)) ) \
-    BETA_ ## BETA( vfmadd231pd(ymm(VLH_), ymm(VBETA_), ymm(VFH_)) ) \
+    BETA_ ## BETA( vfmadd231pd(mem(CADDR), ymm(VBETA_), ymm(VFH_)) ) \
     vmaskmovpd(ymm(VFH_), VMASK, mem(CADDR)) \
     add(CSC, CADDR)
 
@@ -280,31 +213,18 @@
     BETA_ ## BETA ( vfmadd231pd(mem(CADDR4, CSC3, 1), xmm3, xmm(C00_)) ) \
     vmovupd(xmm(C00_), mem(CADDR4, CSC3, 1))
 
-#define DGENMASK_1(A1_,B1_,RTMP)
-#define DGENMASK_2(A1_,B1_,RTMP)
-#define DGENMASK_4(A1_,B1_,RTMP)
-#define DGENMASK_5(A1_,B1_,RTMP)
-#define DGENMASK_6(A1_,B1_,RTMP)
-#define DGENMASK_8(A1_,B1_,RTMP)
+#define DGENMASK_1(V_,RTMP)
+#define DGENMASK_2(V_,RTMP)
+#define DGENMASK_4(V_,RTMP)
+#define DGENMASK_5(V_,RTMP)
+#define DGENMASK_6(V_,RTMP)
+#define DGENMASK_7(V_,RTMP) DGENMASK_3(V_,RTMP)
+#define DGENMASK_8(V_,RTMP)
 
-#define DGENMASK_3(A1_,B1_,RTMP) /* Use B1 */ \
+#define DGENMASK_3(V_,RTMP) \
     mov(imm(0b00000000111111111111111111111111), RTMP) \
-    vmovd(RTMP, xmm(B1_)) \
-    vpmovsxbq(xmm(B1_), ymm(B1_))
-
-#define DGENMASK_7(A1_,B1_,RTMP) /* Use A1 */ \
-    mov(imm(0b00000000111111111111111111111111), RTMP) \
-    vmovd(RTMP, xmm(A1_)) \
-    vpmovsxbq(xmm(A1_), ymm(A1_))
-
-#define DMOVMASK_LOC_1
-#define DMOVMASK_LOC_2
-#define DMOVMASK_LOC_3
-#define DMOVMASK_LOC_4
-#define DMOVMASK_LOC_5
-#define DMOVMASK_LOC_6
-#define DMOVMASK_LOC_7 vmovapd(ymm1, ymm3)
-#define DMOVMASK_LOC_8
+    vmovd(RTMP, xmm(V_)) \
+    vpmovsxbq(xmm(V_), ymm(V_))
 
 // Define microkernel here.
 // It will be instantiated multiple times by the millikernel assembly.
@@ -317,8 +237,6 @@
      * mov(var(b_p), rdx)
      * mov(var(b_next), r8)
      * mov(var(rs_b2), r9) ** r9 = rs_b_next */ \
-\
-    DGENMASK_## N (1,3,rdi) \
 \
     mov(var(rs_c), rdi) \
     mov(var(cs_c), rsi) \
@@ -456,7 +374,7 @@
     lea(mem(rcx, rdi, 4), r14) /* load address of c + 4*rs_c; */ \
     lea(mem(rsi, rsi, 2), r13) /* r13 = 3*cs_c; */ \
 \
-    DMOVMASK_LOC_## N /* ymm3 is mask when n == 3 or n == 7. */ \
+    DGENMASK_## N (3,r15) /* ymm3 is mask when n == 3 or n == 7. */ \
     vxorpd(ymm0, ymm0, ymm0) /* set ymm0 to zero. */ \
     vucomisd(xmm0, xmm2) /* set ZF if beta == 0. */ \
     je(.DBETAZERO_ ## LABEL_SUFFIX) /* if ZF = 1, jump to beta == 0 case */ \
