@@ -567,13 +567,6 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     uint64_t rs_c   = rs_c0 << 3; \
     uint64_t cs_c   = cs_c0 << 3; \
 \
-    /* Spare the first(?) n_iter for doing B-packing */ \
-    if ( !n_left ) \
-    { \
-      n_iter--; \
-      n_left = 8; \
-    } \
-\
     begin_asm() \
 \
     /* First (A-packing) microkernel */ \
@@ -581,68 +574,77 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
     mov(var(c), rcx) \
     mov(var(b_p), rdx) \
     mov(var(pack_a), rdi) \
-    mov(rbx, r8) \
-    add(var(ps_b2), r8) \
-    mov(var(rs_b), r9) \
     mov(var(n_iter), rsi) \
-    test(rsi, rsi) \
-    je(.DM_LEFT) \
+    cmp(imm(2), rsi) \
+    je(.DN_BEFORE_INIT_NEXT_IS_FINAL) \
+        mov(rbx, r8) \
+        add(var(ps_b2), r8) \
+        mov(var(rs_b), r9) \
+        jmp(.DN_BEFORE_INIT_CONTINUE) \
+    label(.DN_BEFORE_INIT_NEXT_IS_FINAL) \
+        mov(var(b_next), r8) \
+        mov(var(rs_b2), r9) \
+    label(.DN_BEFORE_INIT_CONTINUE) \
     test(rdi, rdi) \
-    je(.DM_ITER) \
+    je(.DN_ITER) \
     DGEMM_6X8N_UKER_LOC(M,pack,PACKB,BAlign,init) \
     mov(var(n_iter), rsi) \
     mov(var(b), rbx) /*********** Prepare b for next uker */ \
     mov(var(ps_b), rdi) /******** Prepare b for next uker */ \
     lea(mem(rbx, rdi, 1), rbx) /* Prepare b for next uker */ \
-    mov(rbx, r8) /******* Prepare b_next for next uker */ \
-    add(var(ps_b2), r8)/* Prepare b_next for next uker */ \
-    mov(var(rs_b), r9) /* Prepare rs_b_next for next uker */ \
     mov(var(b_p), rdx) /**** Prepare b_p for next uker */ \
     add(var(ps_b_p), rdx) /* Prepare b_p for next uker */ \
     mov(var(c), rcx) /*********** Prepare c for next uker */ \
     mov(var(cs_c), r13) /******** Prepare c for next uker */ \
     lea(mem(rcx, r13, 8), rcx) /* Prepare c for next uker */ \
-    movq(rcx, var(c)) /********** Prepare c for next uker */ \
+    cmp(imm(2), rsi) \
+    je(.DN_INIT_NEXT_IS_FINAL) \
+        mov(rbx, r8) \
+        add(var(ps_b2), r8) \
+        mov(var(rs_b), r9) \
+        jmp(.DN_INIT_CONTINUE) \
+    label(.DN_INIT_NEXT_IS_FINAL) \
+        mov(var(b_next), r8) \
+        mov(var(rs_b2), r9) \
+    label(.DN_INIT_CONTINUE) \
+    movq(rcx, var(c)) \
     movq(rbx, var(b)) \
     movq(rdx, var(b_p)) \
     dec(rsi) \
-    je(.DM_LEFT) \
+    je(.DMILLIKER_END) \
     mov(rsi, var(n_iter)) \
 \
     /* Microkernels in between */ \
-    label(.DM_ITER) \
+    label(.DN_ITER) \
     DGEMM_6X8N_UKER_LOC(M,nopack,PACKB,BAlign,iter) \
     mov(var(n_iter), rsi) \
     mov(var(b), rbx) /*********** Prepare b for next uker */ \
     mov(var(ps_b), rdi) /******** Prepare b for next uker */ \
     lea(mem(rbx, rdi, 1), rbx) /* Prepare b for next uker */ \
-    mov(rbx, r8) /******* Prepare b_next for next uker */ \
-    add(var(ps_b2), r8)/* Prepare b_next for next uker */ \
-    mov(var(rs_b), r9) /* Prepare rs_b_next for next uker */ \
     mov(var(b_p), rdx) /**** Prepare b_p for next uker */ \
     add(var(ps_b_p), rdx) /* Prepare b_p for next uker */ \
     mov(var(c), rcx) /*********** Prepare c for next uker */ \
     mov(var(cs_c), r13) /******** Prepare c for next uker */ \
     lea(mem(rcx, r13, 8), rcx) /* Prepare c for next uker */ \
-    movq(rcx, var(c)) /********** Prepare c for next uker */ \
+    cmp(imm(2), rsi) \
+    je(.DN_ITER_NEXT_IS_FINAL) \
+        mov(rbx, r8) \
+        add(var(ps_b2), r8) \
+        mov(var(rs_b), r9) \
+        jmp(.DN_ITER_CONTINUE) \
+    label(.DN_ITER_NEXT_IS_FINAL) \
+        mov(var(b_next), r8) \
+        mov(var(rs_b2), r9) \
+    label(.DN_ITER_CONTINUE) \
+    movq(rcx, var(c)) \
     movq(rbx, var(b)) \
     movq(rdx, var(b_p)) \
     dec(rsi) \
-    je(.DM_LEFT) \
+    je(.DMILLIKER_END) \
     mov(rsi, var(n_iter)) \
-    jmp(.DM_ITER) \
+    jmp(.DN_ITER) \
 \
-    /* Final microkernel */ \
-    label(.DM_LEFT) \
-    /* TODO: Consider large / small k. */ \
-    mov(var(b_next), r8) /* Override b_next w/ next millikernel. */ \
-    mov(var(rs_b2), r9) /* Override rs_b_next w/ next millikernel. */ \
-    mov(var(n_left), rsi) \
-    cmp(imm(8), rsi) \
-    jne(.DME) \
-    DGEMM_6X8N_UKER_LOC(M,nopack,PACKB,BAlign,fin) \
-\
-    label(.DME) \
+    label(.DMILLIKER_END) \
 \
     end_asm( \
     : [a]     "+m" (a), \
@@ -676,7 +678,6 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
       "xmm12", "xmm13", "xmm14", "xmm15", \
       "memory" \
     ) \
-    n_left %= 8; /* We are pushing GCC to its limit. */ \
 \
     if ( n_left ) \
     { assert( 0 ); } \

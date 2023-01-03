@@ -452,13 +452,6 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     uint64_t rs_c   = rs_c0 << 3; \
     uint64_t cs_c   = cs_c0 << 3; \
 \
-    /* Spare the first(?) m_iter for doing B-packing */ \
-    if ( !m_left ) \
-    { \
-      m_iter--; \
-      m_left = 6; \
-    } \
-\
     begin_asm() \
 \
     /* First (B-packing) microkernel */ \
@@ -466,12 +459,17 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     mov(var(c), rdx) \
     mov(var(a_p), rcx) \
     mov(var(pack_b), rdi) \
-    mov(rax, r8) \
-    add(var(ps_a2), r8) \
-    mov(var(cs_a), r9) \
     mov(var(m_iter), rsi) \
-    test(rsi, rsi) \
-    je(.DM_LEFT) \
+    cmp(imm(2), rsi) \
+    je(.DM_BEFORE_INIT_NEXT_IS_FINAL) \
+        mov(rax, r8) \
+        add(var(ps_a2), r8) \
+        mov(var(cs_a), r9) \
+        jmp(.DM_BEFORE_INIT_CONTINUE) \
+    label(.DM_BEFORE_INIT_NEXT_IS_FINAL) \
+        mov(var(a_next), r8) \
+        mov(var(cs_a2), r9) \
+    label(.DM_BEFORE_INIT_CONTINUE) \
     test(rdi, rdi) \
     je(.DM_ITER) \
     DGEMM_6X8M_UKER_LOC(N,PACKA,pack,noalign,init) \
@@ -479,20 +477,27 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
     lea(mem(rax, rdi, 1), rax) /* Prepare a for next uker */ \
-    mov(rax, r8) /******* Prepare a_next for next uker */ \
-    add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
-    mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
-    mov(var(a_p), rcx) /*** Prepare a_p for next uker */ \
+    mov(var(a_p), rcx) /**** Prepare a_p for next uker */ \
     add(var(ps_a_p), rcx) /* Prepare a_p for next uker */ \
     mov(var(c),    rdx) /******** Prepare c for next uker */ \
     mov(var(rs_c), rdi) /******** Prepare c for next uker */ \
     lea(mem(rdi, rdi, 2), rdi) /* Prepare c for next uker */ \
     lea(mem(rdx, rdi, 2), rdx) /* Prepare c for next uker */ \
-    movq(rdx, var(c)) /********** Prepare c for next uker */ \
+    cmp(imm(2), rsi) \
+    je(.DM_INIT_NEXT_IS_FINAL) \
+        mov(rax, r8) /******* Prepare a_next for next uker */ \
+        add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
+        mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
+        jmp(.DM_INIT_CONTINUE) \
+    label(.DM_INIT_NEXT_IS_FINAL) \
+        mov(var(a_next), r8)/* Prepare a_next for final uker. */ \
+        mov(var(cs_a2), r9) /* Prepare cs_a_next for final uker. */ \
+    label(.DM_INIT_CONTINUE) \
+    movq(rdx, var(c)) \
     movq(rax, var(a)) \
     movq(rcx, var(a_p)) \
     dec(rsi) \
-    je(.DM_LEFT) \
+    je(.DMILLIKER_END) \
     mov(rsi, var(m_iter)) \
 \
     /* Microkernels in between */ \
@@ -502,35 +507,31 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     mov(var(a), rax) /*********** Prepare a for next uker */ \
     mov(var(ps_a), rdi) /******** Prepare a for next uker */ \
     lea(mem(rax, rdi, 1), rax) /* Prepare a for next uker */ \
-    mov(rax, r8) /******* Prepare a_next for next uker */ \
-    add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
-    mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
-    mov(var(a_p), rcx) /*** Prepare a_p for next uker */ \
+    mov(var(a_p), rcx) /**** Prepare a_p for next uker */ \
     add(var(ps_a_p), rcx) /* Prepare a_p for next uker */ \
     mov(var(c),    rdx) /******** Prepare c for next uker */ \
     mov(var(rs_c), rdi) /******** Prepare c for next uker */ \
     lea(mem(rdi, rdi, 2), rdi) /* Prepare c for next uker */ \
     lea(mem(rdx, rdi, 2), rdx) /* Prepare c for next uker */ \
-    movq(rdx, var(c)) /********** Prepare c for next uker */ \
+    cmp(imm(2), rsi) \
+    je(.DM_ITER_NEXT_IS_FINAL) \
+        mov(rax, r8) /******* Prepare a_next for next uker */ \
+        add(var(ps_a2), r8)/* Prepare a_next for next uker */ \
+        mov(var(cs_a), r9) /* Prepare cs_a_next for next uker */ \
+        jmp(.DM_ITER_CONTINUE) \
+    label(.DM_ITER_NEXT_IS_FINAL) \
+        mov(var(a_next), r8)/* Prepare a_next for final uker. */ \
+        mov(var(cs_a2), r9) /* Prepare cs_a_next for final uker. */ \
+    label(.DM_ITER_CONTINUE) \
+    movq(rdx, var(c)) \
     movq(rax, var(a)) \
     movq(rcx, var(a_p)) \
     dec(rsi) \
-    je(.DM_LEFT) \
+    je(.DMILLIKER_END) \
     mov(rsi, var(m_iter)) \
     jmp(.DM_ITER) \
 \
-    /* Final microkernel */ \
-    label(.DM_LEFT) \
-    /* TODO: Consider large / small k. */ \
-    mov(var(a_next), r8) /* Override a_next w/ next millikernel. */ \
-    mov(var(cs_a2), r9) /* Override cs_a_next w/ next millikernel. */ \
-    mov(var(m_left), rsi) \
-    cmp(imm(6), rsi) \
-    jne(.DME) /* TODO: Consider aligned case? Merge this? */ \
-    DGEMM_6X8M_UKER_LOC(N,PACKA,nopack,BAlign__,fin) \
-    movq(imm(0), var(m_left)) \
-\
-    label(.DME) \
+    label(.DMILLIKER_END) \
 \
     end_asm( \
     : [a]     "+m" (a), \
@@ -538,9 +539,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
       [rs_b]  "+m" (rs_b), \
       [c]     "+m" (c), \
       [a_p]   "+m" (a_p), \
-      [m_iter]"+m" (m_iter), \
-      [m_left]"+m" (m_left) \
-    : [rs_a]   "m" (rs_a), \
+      [m_iter]"+m" (m_iter) \
+    : [m_left] "m" (m_left), \
+      [rs_a]   "m" (rs_a), \
       [cs_a]   "m" (cs_a), \
       [cs_a2]  "m" (cs_a_next), \
       [ps_a]   "m" (ps_a), \
