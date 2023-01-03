@@ -461,6 +461,8 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     mov(var(pack_b), rdi) \
     mov(var(m_iter), rsi) \
     mov(var(m_left), r15) \
+    test(rsi, rsi) \
+    je(.DMILLIKER_END) \
     lea(mem(r15, rsi, 8), r15) /* r15 = m_left + 8*m_iter */ \
     cmp(imm(1*8), r15) /* Prefetch next millikernel if m_iter==1 with no m_left. */ \
     je(.DM_BEFORE_INIT_NEXT_IS_FINAL) \
@@ -573,7 +575,37 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
     ) \
 \
     if ( m_left ) \
-    { assert( 0 ); } \
+    { \
+        static double c_t[6*8]; \
+        static double zero = 0.0; \
+        double *c_edge = c; \
+        inc_t rs_c_edge = rs_c0; \
+        inc_t cs_c_edge = cs_c0; \
+        double *beta_edge = beta; \
+\
+        if ( N < 8 ) \
+        { \
+            c_edge = c_t; \
+            rs_c_edge = 8; \
+            cs_c_edge = 1; \
+            beta_edge = &zero; \
+        } \
+\
+        /* Handle with care those modified by assembly. */ \
+        bli_dgemmsup2_rv_haswell_asm_6x8n \
+            ( m_left, 8, k, alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b >> 3, cs_b0, beta_edge, \
+              c_edge, rs_c_edge, cs_c_edge, \
+              data, cntx, \
+              a_p, 0 PACK_ ##PACKA( +1 ), \
+              b_p, 0 ); \
+        if ( c_edge == c_t ) \
+            for ( int i = 0; i < m_left; ++i ) \
+                for ( int j = 0; j < n; ++j ) \
+                    c[ i * rs_c0 + j * cs_c0 ] = c[ i * rs_c0 + j * cs_c0 ] * *beta + \
+                        c_t[ i * 8 + j ]; \
+    } \
 \
 }
 
