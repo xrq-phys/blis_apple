@@ -442,7 +442,6 @@ BEQ(DK_LEFT_LOOP_INIT)
 " ldr             q26, [%0, #16*2]                \n\t"
 " ldr             q27, [%0, #16*3]                \n\t"
 " add             %0, %0, #64                     \n\t"
-PRFMA(%0,0)
 "                                                 \n\t"
 " ldr             q28, [%1, #16*0]                \n\t" // Load B.
 " ldr             q29, [%1, #16*1]                \n\t"
@@ -460,6 +459,7 @@ PRFMA(%0,0)
  "add             %0, %0, #64                     \n\t"
 // Start microkernel loop -- Special treatment for the very first loop.
 " subs            %4, %4, #1                      \n\t" // Decrease counter in advance.
+// On A-prefetching: [, #0] and [, #64] was prefetched by previous uker. Start [, #128].
 PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(INIT,24,25,26,27,28,29,30,load) // Prefetch C 1-4/8.
 PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,load) // Prefetch C 5-8/8.
 BEQ(DFIN_MKER_LOOP) // Branch early to avoid reading excess mem.
@@ -528,10 +528,9 @@ LABEL(DWRITE_MEM_PREP)
 " ld1r            {v25.2d}, [%[beta]]             \n\t"
 "                                                 \n\t"
 LABEL(DPREFETCH_ABNEXT)
-" prfm            PLDL1STRM, [%[a_next], 64*0]    \n\t" // Do not know cache line size,
-" prfm            PLDL1STRM, [%[a_next], 64*1]    \n\t" //  issue some number of prfm instructions
-" prfm            PLDL1STRM, [%[a_next], 64*2]    \n\t" //  to try to activate hardware prefetcher.
-" prfm            PLDL1STRM, [%[b_next], 64*0]    \n\t"
+" prfm            PLDL1STRM, [%[a_next], 64*0]    \n\t" // See above. Prefetch 128 bytes.
+" prfm            PLDL1STRM, [%[a_next], 64*1]    \n\t"
+" prfm            PLDL1STRM, [%[b_next], 64*0]    \n\t" // No. of B lines is not so important.
 " prfm            PLDL1STRM, [%[b_next], 64*1]    \n\t"
 " prfm            PLDL1STRM, [%[b_next], 64*2]    \n\t"
 " prfm            PLDL1STRM, [%[b_next], 64*3]    \n\t"
