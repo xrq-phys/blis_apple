@@ -37,12 +37,11 @@ void bli_gemm_ex
 		bli_obj_dt( alpha ) == BLIS_DOUBLE &&
 		bli_obj_dt( beta  ) == BLIS_DOUBLE )
 	{
-		/* TODO: Detect small-m and transpose into small-n.
-		 * TODO: For x86 only? It seems that arm64 does not need this.
+		/* Detect small-m and transpose into small-n.
+		 * TODO: For x86 only? It seems that arm64 does not need this. */
 		if ( bli_obj_has_notrans( c ) ?
-			bli_obj_dim( BLIS_M, c ) + 8 < bli_obj_dim( BLIS_N, c ) :
-			bli_obj_dim( BLIS_N, c ) + 8 < bli_obj_dim( BLIS_M, c ) ) */
-		if ( false )
+			( bli_obj_dim( BLIS_M, c ) < bli_min( bli_obj_dim( BLIS_N, c ), 50 ) ) :
+			( bli_obj_dim( BLIS_N, c ) < bli_min( bli_obj_dim( BLIS_M, c ), 50 ) ) )
 		{
 			// Call C' += B'A' <=> C += A B.
 			obj_t at, bt, ct;
