@@ -135,7 +135,7 @@
 ///////////// END bli_dgemmsup2_rv_armv8a_asm_8x6r_* /////////////
 
 #define GENDEF(PACKA,PACKB) \
-void bli_dgemmsup2_rv_armv8a_asm_8x6r_ ## PACKA ## _ ## PACKB \
+BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x6_ ## PACKA ## _ ## PACKB \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -484,67 +484,28 @@ LABEL(DEND_WRITE_MEM_ ## PACKA ## _ ## PACKB) \
 GENDEF(pack,pack)
 GENDEF(pack,nopack)
 GENDEF(nopack,pack)
+GENDEF(nopack,nopack)
+
+#undef DGEMM_STORE1V_nopack
+#undef DGEMM_STORE1V_pack
+#undef DGEMM_LOAD1V_noload
+#undef DGEMM_LOAD1V_load
+#undef DGEMM_LOAD2V_noload
+#undef DGEMM_LOAD2V_load
+#undef DGEMM_LOAD1V_G_noload
+#undef DGEMM_LOAD1V_G_load
+#undef GEMM_PRFC_FH_noload
+#undef GEMM_PRFC_LH_FWD_noload
+#undef GEMM_PRFC_FH_load
+#undef GEMM_PRFC_LH_FWD_load
+#undef DGEMM_8X6_MKER_LOOP
+#undef DLOADC_3V_R_FWD
+#undef DSTOREC_3V_R_FWD
+#undef DLOADC_4V_C_FWD
+#undef DSTOREC_4V_C_FWD
+#undef PRFMC_FWD
+#undef DGEMM_8X6_MKER_LOOP_LOC
+#undef DGEMM_8X6_MKER_LOOP_LOC_FWD
 #undef GENDEF
-
-// Defer driver instantiation to edge-case src.
-#if 0
-void bli_dgemmsup2_rv_armv8a_asm_8x6r
-    (
-     dim_t            m,
-     dim_t            n,
-     dim_t            k,
-     double *restrict alpha,
-     double *restrict a, inc_t rs_a0, inc_t cs_a0,
-     double *restrict b, inc_t rs_b0, inc_t cs_b0,
-     double *restrict beta,
-     double *restrict c, inc_t rs_c0, inc_t cs_c0,
-     auxinfo_t       *data,
-     cntx_t          *cntx,
-     double *restrict a_p, int pack_a,
-     double *restrict b_p, int pack_b
-    )
-{
-    assert( m == 8 );
-    assert( n == 6 );
-    assert( cs_b0 == 1 );
-    assert( rs_c0 == 1 ||
-            cs_c0 == 1 );
-
-    switch ( !!pack_a << 1 | !!pack_b ) {
-    case ( 1 << 1 | 1 ):
-        bli_dgemmsup2_rv_armv8a_asm_8x6r_pack_pack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    case ( 1 << 1 | 0 ):
-        bli_dgemmsup2_rv_armv8a_asm_8x6r_pack_nopack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    case ( 0 << 1 | 1 ):
-        bli_dgemmsup2_rv_armv8a_asm_8x6r_nopack_pack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    default:
-        assert( 0 ); break;
-    }
-}
-#endif
 
 #endif

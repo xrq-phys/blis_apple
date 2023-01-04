@@ -100,8 +100,8 @@ void bli_gemm_ex
 		if ( cs_b == 1 ) { mr = 6; nr = 8; milliker = bli_dgemmsup2_rv_haswell_asm_6x8m; }
 		else { mr = 8; nr = 6; milliker = bli_dgemmsup2_cv_haswell_asm_8x6m; }
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
-		milliker = rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
-			bli_dgemmsup2_rv_armv8a_asm_8x6r; mr = 8; nr = 6;
+		milliker = rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6m :
+			bli_dgemmsup2_rv_armv8a_asm_8x6m; mr = 8; nr = 6;
 #else
 		// TODO: Use reference kernels.
 #error "This architecture is not supported yet."

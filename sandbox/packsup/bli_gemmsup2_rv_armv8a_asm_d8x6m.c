@@ -170,7 +170,7 @@
 
 
 #define GENDECL(THISM,PACKA,PACKB) \
-void bli_dgemmsup2_rv_armv8a_asm_## THISM ##x6r_ ## PACKA ## _ ## PACKB \
+BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_## THISM ##x6_ ## PACKA ## _ ## PACKB \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -421,7 +421,7 @@ LABEL(DEND_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 // GENDEF(5,pack,pack)
 // GENDEF(6,pack,pack)
 // GENDEF(7,pack,pack)
-GENDECL(8,pack,pack);
+// GENDECL(8,pack,pack);
 
 GENDEF(1,pack,nopack)
 GENDEF(2,pack,nopack)
@@ -430,7 +430,7 @@ GENDEF(4,pack,nopack)
 GENDEF(5,pack,nopack)
 GENDEF(6,pack,nopack)
 GENDEF(7,pack,nopack)
-GENDECL(8,pack,nopack);
+// GENDECL(8,pack,nopack);
 
 // GENDEF(1,nopack,pack)
 // GENDEF(2,nopack,pack)
@@ -439,7 +439,7 @@ GENDECL(8,pack,nopack);
 // GENDEF(5,nopack,pack)
 // GENDEF(6,nopack,pack)
 // GENDEF(7,nopack,pack)
-GENDECL(8,nopack,pack);
+// GENDECL(8,nopack,pack);
 
 GENDEF(1,nopack,nopack)
 GENDEF(2,nopack,nopack)
@@ -448,12 +448,194 @@ GENDEF(4,nopack,nopack)
 GENDEF(5,nopack,nopack)
 GENDEF(6,nopack,nopack)
 GENDEF(7,nopack,nopack)
-GENDEF(8,nopack,nopack);
+// GENDEF(8,nopack,nopack);
 
-#undef GENDEF
+// Clear all macros.
+#undef DGEMM_MUL_1LINE
+#undef DGEMM_8X6_MKER_LOOP_1
+#undef DGEMM_8X6_MKER_LOOP_2
+#undef DGEMM_8X6_MKER_LOOP_3
+#undef DGEMM_8X6_MKER_LOOP_4
+#undef DGEMM_8X6_MKER_LOOP_5
+#undef DGEMM_8X6_MKER_LOOP_6
+#undef DGEMM_8X6_MKER_LOOP_7
+#undef DGEMM_8X6_MKER_LOOP_8
+#undef DGEMM_8X6_MKER_LOOP_LOC
+#undef DGEMM_LOAD_ACOL_1
+#undef DGEMM_LOAD_ACOL_2
+#undef DGEMM_LOAD_ACOL_3
+#undef DGEMM_LOAD_ACOL_4
+#undef DGEMM_LOAD_ACOL_5
+#undef DGEMM_LOAD_ACOL_6
+#undef DGEMM_LOAD_ACOL_7
+#undef DGEMM_LOAD_ACOL_8
+#undef DGEMM_LOAD_ACOL_LOC
+#undef CLOAD_1ROW
+#undef CSCALE_1ROW
+#undef CSTORE_1ROW
+#undef CIO_UNIT_1ROW
+#undef CIO_UNIT_1COL
+#undef CSTORE_1
+#undef CSTORE_2
+#undef CSTORE_3
+#undef CSTORE_4
+#undef CSTORE_5
+#undef CSTORE_6
+#undef CSTORE_7
+#undef CSTORE_8
+#undef PACKA_STORE_FWD_nopack
+#undef PACKA_STORE_FWD_pack
+#undef PACKB_STORE_FWD_nopack
+#undef PACKB_STORE_FWD_pack
 #undef GENDECL
+#undef GENDEF
 
-void bli_dgemmsup2_rv_armv8a_asm_8x6r
+// Other sizes.
+#include "bli_gemmsup2_rv_armv8a_asm_d8x6m.cin"
+#include "bli_gemmsup2_rv_armv8a_asm_d8x5m.cin"
+
+static double zero = 0.0;
+static double c_t[8*6];
+
+// Edge cases.
+#define EXPAND_CASE_UKer( MN, PA, PB, M, N, PACKA, PACKB ) \
+    case ( PA << 9 | PB << 8 | MN ): \
+        bli_dgemmsup2_rv_armv8a_asm_ ## M ## x## N ##_## PACKA ##_ ## PACKB \
+            ( M, N, k, \
+              alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, \
+              beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p \
+            ); break;
+
+#define GENDEF_Milliker(N,PACKA) \
+BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
+    ( \
+     dim_t            m, \
+     dim_t            n, \
+     dim_t            k, \
+     double *restrict alpha, \
+     double *restrict a, inc_t rs_a0, inc_t cs_a0, \
+     double *restrict b, inc_t rs_b0, inc_t cs_b0, \
+     double *restrict beta, \
+     double *restrict c, inc_t rs_c0, inc_t cs_c0, \
+     auxinfo_t       *data, \
+     cntx_t          *cntx, \
+     double *restrict a_p, \
+     double *restrict b_p, int pack_b \
+    ) \
+{ \
+    inc_t ps_a_p = bli_auxinfo_is_a( data ); \
+    inc_t ps_a   = bli_auxinfo_ps_a( data ); \
+    const void *next_a = bli_auxinfo_next_a( data ); \
+    const void *next_b = bli_auxinfo_next_b( data ); \
+\
+    if ( m >= 8 && pack_b ) \
+    { \
+        if ( m == 8 ) \
+        { \
+            bli_auxinfo_set_next_a( next_a, data ); \
+            bli_auxinfo_set_next_b( next_b, data ); \
+        } \
+        else \
+        { \
+            bli_auxinfo_set_next_a( a + ps_a, data ); \
+            bli_auxinfo_set_next_b( b_p, data ); \
+        } \
+\
+        bli_dgemmsup2_rv_armv8a_asm_8x ## N ##_ ## PACKA ## _pack \
+        ( 8, N, k, alpha, \
+          a, rs_a0, cs_a0, \
+          b, rs_b0, cs_b0, beta, \
+          c, rs_c0, cs_c0, \
+          data, cntx, a_p, b_p ); \
+\
+        m -= 8; \
+        a += ps_a; \
+        a_p += ps_a_p; \
+        c += 8 * rs_c0; \
+        b = b_p; \
+        rs_b0 = 6; \
+    } \
+\
+    for ( ; m >= 8; m -= 8 ) \
+    { \
+        if ( m == 8 ) \
+        { \
+            bli_auxinfo_set_next_a( next_a, data ); \
+            bli_auxinfo_set_next_b( next_b, data ); \
+        } \
+        else \
+        { \
+            bli_auxinfo_set_next_a( a + ps_a, data ); \
+            bli_auxinfo_set_next_b( b_p, data ); \
+        } \
+\
+        /* Optionally call bulk kernel. */ \
+        if ( a == a_p && b == b_p && N > 3 ) \
+            bli_dgemm_armv8a_asm_8x6r \
+            ( 8, N, k, alpha, a, b, beta, \
+              c, rs_c0, cs_c0, data, cntx ); \
+        else \
+            bli_dgemmsup2_rv_armv8a_asm_8x ## N ##_ ## PACKA ## _nopack \
+            ( 8, N, k, alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p ); \
+\
+        a += ps_a; \
+        a_p += ps_a_p; \
+        c += 8 * rs_c0; \
+    } \
+\
+    double *c_orig = c; \
+    inc_t rs_c_orig = rs_c0; \
+    inc_t cs_c_orig = cs_c0; \
+    double *beta_orig = beta; \
+\
+    if ( N != 6 ) \
+    { \
+        c = c_t; \
+        rs_c0 = 6; \
+        cs_c0 = 1; \
+        beta = &zero; \
+    } \
+\
+    switch ( m ) \
+    { \
+        EXPAND_CASE_UKer( 7, 0, 0, 7, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 6, 0, 0, 6, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 5, 0, 0, 5, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 4, 0, 0, 4, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 3, 0, 0, 3, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 2, 0, 0, 2, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 1, 0, 0, 1, 6, PACKA, nopack ) \
+    } \
+\
+    if ( N != 6 ) \
+        for ( int i = 0; i < m; ++i ) \
+            for ( int j = 0; j < n; ++j ) \
+                c_orig[ i * rs_c_orig + j * cs_c_orig ] = \
+                    c_orig[ i * rs_c_orig + j * cs_c_orig ] * *beta_orig + \
+                        c_t[ i * 6 + j ]; \
+}
+
+GENDEF_Milliker(6,pack)
+
+GENDEF_Milliker(6,nopack)
+GENDEF_Milliker(5,nopack)
+GENDEF_Milliker(4,nopack)
+GENDEF_Milliker(3,nopack)
+GENDEF_Milliker(2,nopack)
+GENDEF_Milliker(1,nopack)
+
+#undef GENDEF_Milliker
+#undef EXPAND_CASE_UKer
+
+void bli_dgemmsup2_rv_armv8a_asm_8x6m
     (
      dim_t            m,
      dim_t            n,
@@ -469,96 +651,32 @@ void bli_dgemmsup2_rv_armv8a_asm_8x6r
      double *restrict b_p, int pack_b
     )
 {
-    if ( n != 6 )
-    {
-        if ( m == 8 )
-        {
-            bli_dgemmsup2_rv_armv8a_asm_8x6c
-                ( m, n, k, alpha,
-                  a, rs_a0, cs_a0,
-                  b, rs_b0, cs_b0, beta,
-                  c, rs_c0, cs_c0,
-                  data, cntx,
-                  a_p, pack_a,
-                  b_p, pack_b );
-            return ;
-        }
-        else
-        {
-            // Static C scratchpad for this.
-            static double c_t[ 6*8 ];
-            static double one = 1.0;
-            static double zero = 0.0;
-            // Caller ensures p_a has enough space. Now do the packing.
-            l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx );
-
-            if ( b != b_p )
-                dpackm
-                    ( BLIS_NO_CONJUGATE, BLIS_PACKED_ROWS, 
-                      n, k, k,
-                      &one,
-                      b, cs_b0, rs_b0,
-                      b_p, 6,
-                      cntx );
-
-            bli_dgemmsup2_rv_armv8a_asm_8x6r
-                ( m, 6, k, alpha,
-                  a, rs_a0, cs_a0,
-                  b_p, 6, 1, &zero,
-                  c_t, 6, 1,
-                  data, cntx,
-                  a_p, 0, // pack_a
-                  b_p, 0 );
-
-            // Unpack result C.
-            for ( int i = 0; i < m; ++i )
-                for ( int j = 0; j < n; ++j )
-                    c[ i * rs_c0 + j * cs_c0 ] =
-                        c[ i * rs_c0 + j * cs_c0 ] * *beta +
-                        c_t[ i * 6 + j ];
-
-            return ;
-        }
-    }
-
 #ifdef DEBUG
-    assert( m <= 8 );
+    assert( n <= 6 );
     assert( cs_b0 == 1 );
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
 #endif
 
-    switch ( !!pack_a << 9 | !!pack_b << 8 | m ) {
-#define EXPAND_CASE_BASE( M, PA, PB, PACKA, PACKB ) \
-    case ( PA << 9 | PB << 8 | M ): \
-        bli_dgemmsup2_rv_armv8a_asm_ ## M ## x6r_## PACKA ##_ ## PACKB \
-            ( m, n, k, \
+    switch ( !!pack_a << 9 | n ) {
+#define EXPAND_CASE_Milliker( N, PA, PACKA ) \
+    case ( PA << 9 | N ): \
+        bli_dgemmsup2_rv_armv8a_asm_8x## N ##m_## PACKA \
+            ( m, N, k, \
               alpha, \
               a, rs_a0, cs_a0, \
               b, rs_b0, cs_b0, \
               beta, \
               c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
+              data, cntx, a_p, b_p, pack_b \
             ); break;
-#define EXPAND_CASE1( M ) \
-      EXPAND_CASE_BASE( M, 1, 1, pack, pack ) \
-      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
-      EXPAND_CASE_BASE( M, 0, 1, nopack, pack ) \
-      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
-    EXPAND_CASE1(8)
-    // Final row-block. B tiles'll never be reused.
-#define EXPAND_CASE2( M ) \
-    case ( 1 << 9 | 1 << 8 | M ): \
-      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
-    case ( 0 << 9 | 1 << 8 | M ): \
-      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
-    EXPAND_CASE2(7)
-    EXPAND_CASE2(6)
-    EXPAND_CASE2(5)
-    EXPAND_CASE2(4)
-    EXPAND_CASE2(3)
-    EXPAND_CASE2(2)
-    EXPAND_CASE2(1)
+    EXPAND_CASE_Milliker( 6, 1, pack )
+    EXPAND_CASE_Milliker( 6, 0, nopack )
+    case ( 1 << 9 | 5 ): EXPAND_CASE_Milliker( 5, 0, nopack )
+    case ( 1 << 9 | 4 ): EXPAND_CASE_Milliker( 4, 0, nopack )
+    case ( 1 << 9 | 3 ): EXPAND_CASE_Milliker( 3, 0, nopack )
+    case ( 1 << 9 | 2 ): EXPAND_CASE_Milliker( 2, 0, nopack )
+    case ( 1 << 9 | 1 ): EXPAND_CASE_Milliker( 1, 0, nopack )
     default:
 #ifdef DEBUG
         assert( 0 );

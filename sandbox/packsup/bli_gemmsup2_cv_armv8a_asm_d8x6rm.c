@@ -416,7 +416,7 @@ GENDECL(8,nopack,nopack);
 #undef GENDECL
 
 
-void bli_dgemmsup2_cv_armv8a_asm_8x6r
+void bli_dgemmsup2_cv_armv8a_asm_8x6m
     (
      dim_t            m,
      dim_t            n,
@@ -436,16 +436,16 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
     {
         if ( m == 8 )
         {
-            bli_dgemmsup2_cv_armv8a_asm_8x6c
-                ( m, n, k,
-                  alpha,
-                  a, rs_a0, cs_a0,
-                  b, rs_b0, cs_b0,
-                  beta,
-                  c, rs_c0, cs_c0,
-                  data, cntx,
-                  a_p, pack_a,
-                  b_p, pack_b );
+            // bli_dgemmsup2_cv_armv8a_asm_8x6c
+            //     ( m, n, k,
+            //       alpha,
+            //       a, rs_a0, cs_a0,
+            //       b, rs_b0, cs_b0,
+            //       beta,
+            //       c, rs_c0, cs_c0,
+            //       data, cntx,
+            //       a_p, pack_a,
+            //       b_p, pack_b );
             return ;
         }
         else
@@ -466,15 +466,15 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r
                       a_p, 8,
                       cntx );
 
-            bli_dgemmsup2_cv_armv8a_asm_8x6c
-                ( 8, n, k, alpha,
-                  a_p, 1, 8,
-                  b, rs_b0, cs_b0, &zero,
-                  c_t, 1, 8,
-                  data, cntx,
-                  a_p, 0,
-                  b_p, 0 // pack_b
-                );
+            // bli_dgemmsup2_cv_armv8a_asm_8x6c
+            //     ( 8, n, k, alpha,
+            //       a_p, 1, 8,
+            //       b, rs_b0, cs_b0, &zero,
+            //       c_t, 1, 8,
+            //       data, cntx,
+            //       a_p, 0,
+            //       b_p, 0 // pack_b
+            //     );
 
             // Unpack result C.
             for ( int i = 0; i < m; ++i )

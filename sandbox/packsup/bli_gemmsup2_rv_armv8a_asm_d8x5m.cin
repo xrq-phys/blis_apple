@@ -154,7 +154,7 @@
 
 
 #define GENDECL(THISN,PACKA,PACKB) \
-void bli_dgemmsup2_rv_armv8a_asm_8x## THISN ##c_ ## PACKA ## _ ## PACKB \
+BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x## THISN ##_ ## PACKA ## _ ## PACKB \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -401,72 +401,36 @@ GENDEF(3,nopack,nopack)
 GENDEF(4,nopack,nopack)
 GENDEF(5,nopack,nopack)
 
-#undef GENDEF
+#undef DGEMM_MUL_1COL
+#undef DGEMM_8X6_MKER_LOOP_1
+#undef DGEMM_8X6_MKER_LOOP_2
+#undef DGEMM_8X6_MKER_LOOP_3
+#undef DGEMM_8X6_MKER_LOOP_4
+#undef DGEMM_8X6_MKER_LOOP_5
+#undef DGEMM_8X6_MKER_LOOP_6
+#undef DGEMM_8X6_MKER_LOOP_LOC
+#undef DGEMM_LOAD_BROW_1
+#undef DGEMM_LOAD_BROW_2
+#undef DGEMM_LOAD_BROW_3
+#undef DGEMM_LOAD_BROW_4
+#undef DGEMM_LOAD_BROW_5
+#undef DGEMM_LOAD_BROW_6
+#undef DGEMM_LOAD_ACOL_LOC
+#undef CSCALE_1COL
+#undef CIO_UNIT_1COL
+#undef CIO_UNIT_1ROW
+#undef CSTORE_1
+#undef CSTORE_2
+#undef CSTORE_3
+#undef CSTORE_4
+#undef CSTORE_5
+#undef CSTORE_6
+#undef PACKA_STORE_FWD_nopack
+#undef PACKA_STORE_FWD_pack
+#undef PACKB_STORE_FWD_nopack
+#undef PACKB_STORE_FWD_pack
 #undef GENDECL
-
-
-void bli_dgemmsup2_rv_armv8a_asm_8x6c
-    (
-     dim_t            m,
-     dim_t            n,
-     dim_t            k,
-     double *restrict alpha,
-     double *restrict a, inc_t rs_a0, inc_t cs_a0,
-     double *restrict b, inc_t rs_b0, inc_t cs_b0,
-     double *restrict beta,
-     double *restrict c, inc_t rs_c0, inc_t cs_c0,
-     auxinfo_t       *data,
-     cntx_t          *cntx,
-     double *restrict a_p, int pack_a,
-     double *restrict b_p, int pack_b
-    )
-{
-#ifdef DEBUG
-    assert( m == 8 );
-    assert( n <= 6 );
-    assert( cs_b0 == 1 );
-    assert( rs_c0 == 1 ||
-            cs_c0 == 1 );
-#endif
-
-    switch ( !!pack_a << 9 | !!pack_b << 8 | n ) {
-    // Final column-block. A tiles'll never be reused.
-#define EXPAND_CASE(N) \
-    case ( 0 << 9 | 1 << 8 | N ): \
-    case ( 1 << 9 | 1 << 8 | N ): \
-        bli_dgemmsup2_rv_armv8a_asm_8x ## N ## c_nopack_pack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break; \
-    case ( 0 << 9 | 0 << 8 | N ): \
-    case ( 1 << 9 | 0 << 8 | N ): \
-        bli_dgemmsup2_rv_armv8a_asm_8x ## N ## c_nopack_nopack \
-            ( m, n, k, \
-              alpha, \
-              a, rs_a0, cs_a0, \
-              b, rs_b0, cs_b0, \
-              beta, \
-              c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
-            ); break;
-    // EXPAND_CASE(6) // Forbidden w/o _pack_* case instantiation.
-    EXPAND_CASE(5)
-    EXPAND_CASE(4)
-    EXPAND_CASE(3)
-    EXPAND_CASE(2)
-    EXPAND_CASE(1)
-    default:
-#ifdef DEBUG
-        assert( 0 );
-#endif
-        break;
-    }
-}
+#undef GENDEF
 
 #endif
 
