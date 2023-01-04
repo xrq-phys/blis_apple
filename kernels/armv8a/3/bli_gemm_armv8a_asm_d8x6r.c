@@ -149,6 +149,10 @@
 " prfm PLDL1KEEP, ["#CADDR", "#LASTB"] \n\t" \
 " add  "#CADDR", "#CADDR", "#RSC"      \n\t"
 
+// Prefetch A.
+#define PRFMA(AADDR,SHIFT) \
+" prfm PLDL1STRM, ["#AADDR", "#SHIFT" ] \n\t"
+
 void bli_sgemm_armv8a_asm_12x8r
      (
        dim_t               m,
@@ -438,6 +442,7 @@ BEQ(DK_LEFT_LOOP_INIT)
 " ldr             q26, [%0, #16*2]                \n\t"
 " ldr             q27, [%0, #16*3]                \n\t"
 " add             %0, %0, #64                     \n\t"
+PRFMA(%0,0)
 "                                                 \n\t"
 " ldr             q28, [%1, #16*0]                \n\t" // Load B.
 " ldr             q29, [%1, #16*1]                \n\t"
@@ -455,29 +460,29 @@ BEQ(DK_LEFT_LOOP_INIT)
  "add             %0, %0, #64                     \n\t"
 // Start microkernel loop -- Special treatment for the very first loop.
 " subs            %4, %4, #1                      \n\t" // Decrease counter in advance.
-DGEMM_8X6_MKER_LOOP_LOC_FWD(INIT,24,25,26,27,28,29,30,load) // Prefetch C 1-4/8.
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,load) // Prefetch C 5-8/8.
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(INIT,24,25,26,27,28,29,30,load) // Prefetch C 1-4/8.
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,load) // Prefetch C 5-8/8.
 BEQ(DFIN_MKER_LOOP) // Branch early to avoid reading excess mem.
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload)
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload)
 // Start microkernel loop.
 LABEL(DK_MKER_LOOP)
 " subs            %4, %4, #1                      \n\t" // Decrease counter in advance.
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,28,29,30,noload)
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,28,29,30,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,noload)
 BEQ(DFIN_MKER_LOOP) // Branch early to avoid reading excess mem.
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload)
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload)
 BRANCH(DK_MKER_LOOP)
 //
 // Final microkernel loop.
 LABEL(DFIN_MKER_LOOP)
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,30,31,28,%0,0,%1,16,load,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,30,31,28,%0,0,%1,16,load,noload)
 " add             %1, %1, #48                     \n\t"
 " ldr             q26, [%0, #16*2]                \n\t"
 " ldr             q27, [%0, #16*3]                \n\t"
 " add             %0, %0, #64                     \n\t"
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,29,30,31,xzr,-1,xzr,-1,noload,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,29,30,31,xzr,-1,xzr,-1,noload,noload)
 //
 // Loops left behind microkernels.
 LABEL(DK_LEFT_LOOP)
@@ -493,7 +498,7 @@ BEQ(DWRITE_MEM_PREP)
 " ldr             q30, [%1, #16*2]                \n\t"
 " add             %1, %1, #48                     \n\t"
 " sub             %5, %5, #1                      \n\t"
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,28,29,30,xzr,-1,xzr,-1,noload,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,28,29,30,xzr,-1,xzr,-1,noload,noload)
 BRANCH(DK_LEFT_LOOP)
 LABEL(DK_LEFT_LOOP_INIT)
 " cmp             %5, #0                          \n\t" // End of exec.
@@ -508,7 +513,7 @@ BEQ(DCLEAR_CCOLS)
 " ldr             q30, [%1, #16*2]                \n\t"
 " add             %1, %1, #48                     \n\t"
 " sub             %5, %5, #1                      \n\t"
-DGEMM_8X6_MKER_LOOP_LOC(INIT,24,25,26,27,28,29,30,xzr,-1,xzr,-1,noload,noload)
+PRFMA(%0,64) DGEMM_8X6_MKER_LOOP_LOC(INIT,24,25,26,27,28,29,30,xzr,-1,xzr,-1,noload,noload)
 BRANCH(DK_LEFT_LOOP)
 //
 // No FMUL at all to clear C up. Have to zeroize.
