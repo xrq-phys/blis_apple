@@ -152,6 +152,10 @@
  "str  q"#B2", ["#PBADDR", #2*16]  \n\t" \
  "add  "#PBADDR", "#PBADDR", #3*16  \n\t"
 
+#define PRFA_LOC \
+ "prfm PLDL1STRM, [%[a_next]] \n\t" \
+ "add  %[a_next], %[a_next], %[cs_a2] \n\t"
+
 
 #define GENDECL(THISN,PACKA,PACKB) \
 BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x## THISN ##_ ## PACKA ## _ ## PACKB \
@@ -175,6 +179,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x## THISN ##_ ## PACKA ## _ ## PAC
 { \
   const void* a_next = bli_auxinfo_next_a( data ); \
   const void* b_next = bli_auxinfo_next_b( data ); \
+  uint64_t cs_a_next = bli_auxinfo_ps_b( data ); \
 \
   /* Typecast local copies of integers in case dim_t and inc_t are a
    * different size than is expected by load instructions. */ \
@@ -202,35 +207,35 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x## THISN ##_ ## PACKA ## _ ## PAC
 BEQ(DK_LEFT_LOOP_INIT_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 " subs            %[k_mker], %[k_mker], #1        \n\t" \
 \
-DGEMM_LOAD_ACOL_LOC(24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmul,24,25,26,27,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(28,24,25,26) \
+DGEMM_LOAD_ACOL_LOC(28,24,25,26) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,28,24,25,26,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(27,28,24,25) \
+DGEMM_LOAD_ACOL_LOC(27,28,24,25) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,27,28,24,25,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(26,27,28,24) \
+DGEMM_LOAD_ACOL_LOC(26,27,28,24) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,26,27,28,24,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(25,26,27,28) \
+DGEMM_LOAD_ACOL_LOC(25,26,27,28) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,25,26,27,28,29,30,31) \
@@ -242,35 +247,35 @@ BEQ(DK_LEFT_LOOP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 LABEL(DK_MKER_LOOP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 " subs            %[k_mker], %[k_mker], #1        \n\t" \
 \
-DGEMM_LOAD_ACOL_LOC(24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,24,25,26,27,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(28,24,25,26) \
+DGEMM_LOAD_ACOL_LOC(28,24,25,26) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,28,24,25,26,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(27,28,24,25) \
+DGEMM_LOAD_ACOL_LOC(27,28,24,25) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,27,28,24,25,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(26,27,28,24) \
+DGEMM_LOAD_ACOL_LOC(26,27,28,24) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,26,27,28,24,29,30,31) \
 PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC(25,26,27,28) \
+DGEMM_LOAD_ACOL_LOC(25,26,27,28) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISN,fmla,25,26,27,28,29,30,31) \
@@ -283,7 +288,7 @@ BRANCH(DK_MKER_LOOP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 LABEL(DK_LEFT_LOOP_INIT_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 " cmp             %[k_left], #0                   \n\t" \
 BEQ(CLEAR_CROWS_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
-DGEMM_LOAD_ACOL_LOC(24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
@@ -294,7 +299,7 @@ PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 LABEL(DK_LEFT_LOOP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 " cmp             %[k_left], #0                   \n\t" \
 BEQ(DWRITE_MEM_PREP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
-DGEMM_LOAD_ACOL_LOC(24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_ ## THISN (29,30,31,%[b]) \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
@@ -313,9 +318,6 @@ LABEL(DWRITE_MEM_PREP_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
 " ld1r            {v31.2d}, [%[beta]]             \n\t" \
 "                                                 \n\t" \
 LABEL(DPREFETCH_ABNEXT_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
-" prfm            PLDL1KEEP, [%[a_next], 64*0]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*1]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*2]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*0]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*1]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*2]    \n\t" \
@@ -348,6 +350,7 @@ LABEL(DEND_ ## THISN ## _ ## PACKA ## _ ## PACKB) \
   [a_6]    "+r" (a_6), \
   [a_7]    "+r" (a_7), \
   [cs_a]   "+r" (cs_a), \
+  [cs_a2]  "+r" (cs_a_next), \
   [b]      "+r" (b), \
   [rs_b]   "+r" (rs_b), \
   [c]      "+r" (c), \

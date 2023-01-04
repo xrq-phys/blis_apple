@@ -168,6 +168,10 @@
  "str  q"#B2", ["#PBADDR", #2*16]  \n\t" \
  "add  "#PBADDR", "#PBADDR", #3*16  \n\t"
 
+#define PRFA_LOC \
+ "prfm PLDL1STRM, [%[a_next]] \n\t" \
+ "add  %[a_next], %[a_next], %[cs_a2] \n\t"
+
 
 #define GENDECL(THISM,PACKA,PACKB) \
 BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_## THISM ##x6_ ## PACKA ## _ ## PACKB \
@@ -191,6 +195,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_## THISM ##x6_ ## PACKA ## _ ## PAC
 { \
   const void* a_next = bli_auxinfo_next_a( data ); \
   const void* b_next = bli_auxinfo_next_b( data ); \
+  uint64_t cs_a_next = bli_auxinfo_ps_b( data ); \
 \
   /* Typecast local copies of integers in case dim_t and inc_t are a
    * different size than is expected by load instructions. */ \
@@ -222,7 +227,7 @@ BEQ(DK_LEFT_LOOP_INIT_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmul,24,25,26,27,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
@@ -231,7 +236,7 @@ PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,28,24,25,26) \
+DGEMM_LOAD_ACOL_LOC(THISM,28,24,25,26) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,28,24,25,26,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
@@ -240,7 +245,7 @@ PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,27,28,24,25) \
+DGEMM_LOAD_ACOL_LOC(THISM,27,28,24,25) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,27,28,24,25,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
@@ -249,7 +254,7 @@ PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,26,27,28,24) \
+DGEMM_LOAD_ACOL_LOC(THISM,26,27,28,24) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,26,27,28,24,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
@@ -258,7 +263,7 @@ PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,25,26,27,28) \
+DGEMM_LOAD_ACOL_LOC(THISM,25,26,27,28) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,25,26,27,28,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (25,26,27,28,%[a_p]) \
@@ -272,7 +277,7 @@ LABEL(DK_MKER_LOOP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
@@ -281,7 +286,7 @@ PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,28,24,25,26) \
+DGEMM_LOAD_ACOL_LOC(THISM,28,24,25,26) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,28,24,25,26,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
@@ -290,7 +295,7 @@ PACKA_STORE_FWD_ ## PACKA (28,24,25,26,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,27,28,24,25) \
+DGEMM_LOAD_ACOL_LOC(THISM,27,28,24,25) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,27,28,24,25,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
@@ -299,7 +304,7 @@ PACKA_STORE_FWD_ ## PACKA (27,28,24,25,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,26,27,28,24) \
+DGEMM_LOAD_ACOL_LOC(THISM,26,27,28,24) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,26,27,28,24,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
@@ -308,7 +313,7 @@ PACKA_STORE_FWD_ ## PACKA (26,27,28,24,%[a_p]) \
 " ldr             q30, [%[b], #16*1]              \n\t" \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,25,26,27,28) \
+DGEMM_LOAD_ACOL_LOC(THISM,25,26,27,28) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,25,26,27,28,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (25,26,27,28,%[a_p]) \
@@ -324,7 +329,7 @@ BEQ(CLEAR_CROWS_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmul,24,25,26,27,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
@@ -337,7 +342,7 @@ BEQ(DWRITE_MEM_PREP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ldr             q31, [%[b], #16*2]              \n\t" \
 " add             %[b], %[b], %[rs_b]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
-DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC(THISM,24,25,26,27) PRFA_LOC \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,29,30,31) \
 PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
@@ -388,6 +393,7 @@ LABEL(DEND_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
   [a_6]    "+r" (a_6), \
   [a_7]    "+r" (a_7), \
   [cs_a]   "+r" (cs_a), \
+  [cs_a2]  "+r" (cs_a_next), \
   [b]      "+r" (b), \
   [rs_b]   "+r" (rs_b), \
   [c]      "+r" (c), \
@@ -527,10 +533,14 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
      double *restrict b_p, int pack_b \
     ) \
 { \
-    inc_t ps_a_p = bli_auxinfo_is_a( data ); \
-    inc_t ps_a   = bli_auxinfo_ps_a( data ); \
+    inc_t ps_a_p    = bli_auxinfo_is_a( data ); \
+    inc_t ps_a      = bli_auxinfo_ps_a( data ); \
+    inc_t cs_a_next = bli_auxinfo_ps_b( data ); \
     const void *next_a = bli_auxinfo_next_a( data ); \
     const void *next_b = bli_auxinfo_next_b( data ); \
+\
+    bli_auxinfo_set_next_b( b_p, data ); \
+    bli_auxinfo_set_ps_b( cs_a0, data ); \
 \
     if ( m >= 8 && pack_b ) \
     { \
@@ -538,12 +548,10 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
         { \
             bli_auxinfo_set_next_a( next_a, data ); \
             bli_auxinfo_set_next_b( next_b, data ); \
+            bli_auxinfo_set_ps_b( cs_a_next, data ); \
         } \
         else \
-        { \
-            bli_auxinfo_set_next_a( a + ps_a, data ); \
-            bli_auxinfo_set_next_b( b_p, data ); \
-        } \
+            bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
 \
         bli_dgemmsup2_rv_armv8a_asm_8x ## N ##_ ## PACKA ## _pack \
         ( 8, N, k, alpha, \
@@ -566,12 +574,10 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
         { \
             bli_auxinfo_set_next_a( next_a, data ); \
             bli_auxinfo_set_next_b( next_b, data ); \
+            bli_auxinfo_set_ps_b( cs_a_next, data ); \
         } \
         else \
-        { \
-            bli_auxinfo_set_next_a( a + ps_a, data ); \
-            bli_auxinfo_set_next_b( b_p, data ); \
-        } \
+            bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
 \
         /* Optionally call bulk kernel. */ \
         if ( a == a_p && b == b_p && N > 3 ) \
@@ -603,6 +609,10 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
         cs_c0 = 1; \
         beta = &zero; \
     } \
+\
+    bli_auxinfo_set_next_a( next_a, data ); \
+    bli_auxinfo_set_next_b( next_b, data ); \
+    bli_auxinfo_set_ps_b( cs_a_next, data ); \
 \
     switch ( m ) \
     { \
