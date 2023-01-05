@@ -172,9 +172,13 @@
  "str  q"#B2", ["#PBADDR", #2*16]  \n\t" \
  "add  "#PBADDR", "#PBADDR", #3*16  \n\t"
 
+#define PRFA_LOC \
+ "prfm PLDL1STRM, [%[a_next]] \n\t" \
+ "add  %[a_next], %[a_next], %[cs_a2] \n\t"
+
 
 #define GENDECL(THISM,PACKA,PACKB) \
-void bli_dgemmsup2_cv_armv8a_asm_## THISM ##x6r_ ## PACKA ## _ ## PACKB \
+BLIS_INLINE void bli_dgemmsup2_cv_armv8a_asm_## THISM ##x6_ ## PACKA ## _ ## PACKB \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -195,6 +199,7 @@ void bli_dgemmsup2_cv_armv8a_asm_## THISM ##x6r_ ## PACKA ## _ ## PACKB \
 { \
   const void* a_next = bli_auxinfo_next_a( data ); \
   const void* b_next = bli_auxinfo_next_b( data ); \
+  uint64_t cs_a_next = bls_aux_ls_ext_next( data ); \
 \
   /* Typecast local copies of integers in case dim_t and inc_t are a
    * different size than is expected by load instructions. */ \
@@ -220,28 +225,28 @@ void bli_dgemmsup2_cv_armv8a_asm_## THISM ##x6r_ ## PACKA ## _ ## PACKB \
 BEQ(DK_LEFT_LOOP_INIT_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " subs            %[k_mker], %[k_mker], #1        \n\t" \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(28,29,30) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmul,24,25,26,27,28,29,30) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (28,29,30,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(31,28,29) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,31,28,29) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (31,28,29,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(30,31,28) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,30,31,28) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (30,31,28,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(29,30,31) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,29,30,31) \
@@ -253,28 +258,28 @@ BEQ(DK_LEFT_LOOP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 LABEL(DK_MKER_LOOP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " subs            %[k_mker], %[k_mker], #1        \n\t" \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(28,29,30) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,28,29,30) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (28,29,30,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(31,28,29) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,31,28,29) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (31,28,29,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(30,31,28) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,30,31,28) \
 PACKA_STORE_FWD_ ## PACKA (24,25,26,27,%[a_p]) \
 PACKB_STORE_FWD_ ## PACKB (30,31,28,%[b_p]) \
 \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(29,30,31) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 DGEMM_8X6_MKER_LOOP_LOC(THISM,fmla,24,25,26,27,29,30,31) \
@@ -287,7 +292,7 @@ BRANCH(DK_MKER_LOOP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 LABEL(DK_LEFT_LOOP_INIT_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " cmp             %[k_left], #0                   \n\t" \
 BEQ(CLEAR_CROWS_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(29,30,31) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
@@ -298,7 +303,7 @@ PACKB_STORE_FWD_ ## PACKB (29,30,31,%[b_p]) \
 LABEL(DK_LEFT_LOOP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " cmp             %[k_left], #0                   \n\t" \
 BEQ(DWRITE_MEM_PREP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
-DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) \
+DGEMM_LOAD_ACOL_LOC_ ## THISM (24,25,26,27) PRFA_LOC \
 DGEMM_LOAD_BROW_LOC(29,30,31) \
 " add             %[a], %[a], %[cs_a]             \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
@@ -317,9 +322,6 @@ LABEL(DWRITE_MEM_PREP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ld1r            {v31.2d}, [%[beta]]             \n\t" \
 "                                                 \n\t" \
 LABEL(DPREFETCH_ABNEXT_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
-" prfm            PLDL1KEEP, [%[a_next], 64*0]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*1]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*2]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*0]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*1]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*2]    \n\t" \
@@ -345,6 +347,7 @@ CSTORE_## THISM (COL,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,
 LABEL(DEND_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 : [a]      "+r" (a), \
   [cs_a]   "+r" (cs_a), \
+  [cs_a2]  "+r" (cs_a_next), \
   [b_0]    "+r" (b_0), \
   [b_1]    "+r" (b_1), \
   [b_2]    "+r" (b_2), \
@@ -383,7 +386,7 @@ LABEL(DEND_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 // GENDEF(5,pack,pack)
 // GENDEF(6,pack,pack)
 // GENDEF(7,pack,pack)
-GENDECL(8,pack,pack);
+// GENDECL(8,pack,pack);
 
 GENDEF(1,pack,nopack)
 GENDEF(2,pack,nopack)
@@ -392,7 +395,7 @@ GENDEF(4,pack,nopack)
 GENDEF(5,pack,nopack)
 GENDEF(6,pack,nopack)
 GENDEF(7,pack,nopack)
-GENDECL(8,pack,nopack);
+// GENDECL(8,pack,nopack);
 
 // GENDEF(1,nopack,pack)
 // GENDEF(2,nopack,pack)
@@ -401,7 +404,7 @@ GENDECL(8,pack,nopack);
 // GENDEF(5,nopack,pack)
 // GENDEF(6,nopack,pack)
 // GENDEF(7,nopack,pack)
-GENDECL(8,nopack,pack);
+// GENDECL(8,nopack,pack);
 
 GENDEF(1,nopack,nopack)
 GENDEF(2,nopack,nopack)
@@ -410,11 +413,197 @@ GENDEF(4,nopack,nopack)
 GENDEF(5,nopack,nopack)
 GENDEF(6,nopack,nopack)
 GENDEF(7,nopack,nopack)
-GENDECL(8,nopack,nopack);
+// GENDECL(8,nopack,nopack);
 
-#undef GENDEF
+
+#undef DGEMM_MUL_1LINE
+#undef DGEMM_8X6_MKER_LOOP_1
+#undef DGEMM_8X6_MKER_LOOP_2
+#undef DGEMM_8X6_MKER_LOOP_3
+#undef DGEMM_8X6_MKER_LOOP_4
+#undef DGEMM_8X6_MKER_LOOP_5
+#undef DGEMM_8X6_MKER_LOOP_6
+#undef DGEMM_8X6_MKER_LOOP_7
+#undef DGEMM_8X6_MKER_LOOP_8
+#undef DGEMM_8X6_MKER_LOOP_LOC
+#undef DGEMM_LOAD_ACOL_LOC_1
+#undef DGEMM_LOAD_ACOL_LOC_2
+#undef DGEMM_LOAD_ACOL_LOC_3
+#undef DGEMM_LOAD_ACOL_LOC_4
+#undef DGEMM_LOAD_ACOL_LOC_5
+#undef DGEMM_LOAD_ACOL_LOC_6
+#undef DGEMM_LOAD_ACOL_LOC_7
+#undef DGEMM_LOAD_ACOL_LOC_8
+#undef DGEMM_LOAD_BROW_LOC
+#undef CLOAD_1ROW
+#undef CSCALE_1ROW
+#undef CSTORE_1ROW
+#undef CIO_UNIT_1ROW
+#undef CIO_UNIT_1COL
+#undef CSTORE_1
+#undef CSTORE_2
+#undef CSTORE_3
+#undef CSTORE_4
+#undef CSTORE_5
+#undef CSTORE_6
+#undef CSTORE_7
+#undef CSTORE_8
+#undef PACKA_STORE_FWD_nopack
+#undef PACKA_STORE_FWD_pack
+#undef PACKB_STORE_FWD_nopack
+#undef PACKB_STORE_FWD_pack
 #undef GENDECL
+#undef GENDEF
 
+// Other sizes.
+#include "bli_gemmsup2_cv_armv8a_asm_d8x6m.cin"
+#include "bli_gemmsup2_cv_armv8a_asm_d8x5m.cin"
+
+static double zero = 0.0;
+static double c_t[8*6];
+
+// Edge cases.
+#define EXPAND_CASE_UKer( MN, PA, PB, M, N, PACKA, PACKB ) \
+    case ( PA << 9 | PB << 8 | MN ): \
+        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x## N ##_## PACKA ##_ ## PACKB \
+            ( M, N, k, \
+              alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, \
+              beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p \
+            ); break;
+
+#define GENDEF_Milliker(N,PACKA) \
+BLIS_INLINE void bli_dgemmsup2_cv_armv8a_asm_8x ## N ## m_ ## PACKA \
+    ( \
+     dim_t            m, \
+     dim_t            n, \
+     dim_t            k, \
+     double *restrict alpha, \
+     double *restrict a, inc_t rs_a0, inc_t cs_a0, \
+     double *restrict b, inc_t rs_b0, inc_t cs_b0, \
+     double *restrict beta, \
+     double *restrict c, inc_t rs_c0, inc_t cs_c0, \
+     auxinfo_t       *data, \
+     cntx_t          *cntx, \
+     double *restrict a_p, \
+     double *restrict b_p, int pack_b \
+    ) \
+{ \
+    inc_t ps_a_p    = bls_aux_ps_ext_p   ( data ); \
+    inc_t ps_a      = bls_aux_ps_ext     ( data ); \
+    inc_t cs_a_next = bls_aux_ls_ext_next( data ); \
+    const void *next_a = bli_auxinfo_next_a( data ); \
+    const void *next_b = bli_auxinfo_next_b( data ); \
+\
+    bli_auxinfo_set_next_b( b_p, data ); \
+    bls_aux_set_ls_ext_next( cs_a0, data ); \
+\
+    if ( m >= 8 && pack_b ) \
+    { \
+        if ( m == 8 ) \
+        { \
+            bli_auxinfo_set_next_a( next_a, data ); \
+            bli_auxinfo_set_next_b( next_b, data ); \
+            bls_aux_set_ls_ext_next( cs_a_next, data ); \
+        } \
+        else \
+            bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
+\
+        bli_dgemmsup2_cv_armv8a_asm_8x ## N ##_ ## PACKA ## _pack \
+        ( 8, N, k, alpha, \
+          a, rs_a0, cs_a0, \
+          b, rs_b0, cs_b0, beta, \
+          c, rs_c0, cs_c0, \
+          data, cntx, a_p, b_p ); \
+\
+        m -= 8; \
+        a += ps_a; \
+        a_p += ps_a_p; \
+        c += 8 * rs_c0; \
+        b = b_p; \
+        rs_b0 = 6; \
+        cs_b0 = 1; \
+    } \
+\
+    for ( ; m >= 8; m -= 8 ) \
+    { \
+        if ( m == 8 ) \
+        { \
+            bli_auxinfo_set_next_a( next_a, data ); \
+            bli_auxinfo_set_next_b( next_b, data ); \
+            bls_aux_set_ls_ext_next( cs_a_next, data ); \
+        } \
+        else \
+            bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
+\
+        /* Optionally call bulk kernel. */ \
+        if ( a == a_p && b == b_p && N > 3 ) \
+            bli_dgemm_armv8a_asm_8x6r \
+            ( 8, N, k, alpha, a, b, beta, \
+              c, rs_c0, cs_c0, data, cntx ); \
+        else \
+            bli_dgemmsup2_cv_armv8a_asm_8x ## N ##_ ## PACKA ## _nopack \
+            ( 8, N, k, alpha, \
+              a, rs_a0, cs_a0, \
+              b, rs_b0, cs_b0, beta, \
+              c, rs_c0, cs_c0, \
+              data, cntx, a_p, b_p ); \
+\
+        a += ps_a; \
+        a_p += ps_a_p; \
+        c += 8 * rs_c0; \
+    } \
+\
+    double *c_orig = c; \
+    inc_t rs_c_orig = rs_c0; \
+    inc_t cs_c_orig = cs_c0; \
+    double *beta_orig = beta; \
+\
+    if ( N != 6 ) \
+    { \
+        c = c_t; \
+        rs_c0 = 6; \
+        cs_c0 = 1; \
+        beta = &zero; \
+    } \
+\
+    bli_auxinfo_set_next_a( next_a, data ); \
+    bli_auxinfo_set_next_b( next_b, data ); \
+    bls_aux_set_ls_ext_next( cs_a_next, data ); \
+\
+    switch ( m ) \
+    { \
+        EXPAND_CASE_UKer( 7, 0, 0, 7, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 6, 0, 0, 6, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 5, 0, 0, 5, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 4, 0, 0, 4, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 3, 0, 0, 3, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 2, 0, 0, 2, 6, PACKA, nopack ) \
+        EXPAND_CASE_UKer( 1, 0, 0, 1, 6, PACKA, nopack ) \
+    } \
+\
+    if ( N != 6 ) \
+        for ( int i = 0; i < m; ++i ) \
+            for ( int j = 0; j < n; ++j ) \
+                c_orig[ i * rs_c_orig + j * cs_c_orig ] = \
+                    c_orig[ i * rs_c_orig + j * cs_c_orig ] * *beta_orig + \
+                        c_t[ i * 6 + j ]; \
+}
+
+GENDEF_Milliker(6,pack)
+
+GENDEF_Milliker(6,nopack)
+GENDEF_Milliker(5,nopack)
+GENDEF_Milliker(4,nopack)
+GENDEF_Milliker(3,nopack)
+GENDEF_Milliker(2,nopack)
+GENDEF_Milliker(1,nopack)
+
+#undef GENDEF_Milliker
+#undef EXPAND_CASE_UKer
 
 void bli_dgemmsup2_cv_armv8a_asm_8x6m
     (
@@ -432,101 +621,32 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6m
      double *restrict b_p, int pack_b
     )
 {
-    if ( n != 6 )
-    {
-        if ( m == 8 )
-        {
-            // bli_dgemmsup2_cv_armv8a_asm_8x6c
-            //     ( m, n, k,
-            //       alpha,
-            //       a, rs_a0, cs_a0,
-            //       b, rs_b0, cs_b0,
-            //       beta,
-            //       c, rs_c0, cs_c0,
-            //       data, cntx,
-            //       a_p, pack_a,
-            //       b_p, pack_b );
-            return ;
-        }
-        else
-        {
-            // Static C scratchpad for this.
-            static double c_t[ 6*8 ];
-            static double one = 1.0;
-            static double zero = 0.0;
-            // Caller ensures p_a has enough space. Now do the packing.
-            l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_MRXK_KER, cntx );
-
-            if ( b != b_p )
-                dpackm
-                    ( BLIS_NO_CONJUGATE, BLIS_PACKED_COLUMNS, 
-                      m, k, k,
-                      &one,
-                      a, rs_a0, cs_a0,
-                      a_p, 8,
-                      cntx );
-
-            // bli_dgemmsup2_cv_armv8a_asm_8x6c
-            //     ( 8, n, k, alpha,
-            //       a_p, 1, 8,
-            //       b, rs_b0, cs_b0, &zero,
-            //       c_t, 1, 8,
-            //       data, cntx,
-            //       a_p, 0,
-            //       b_p, 0 // pack_b
-            //     );
-
-            // Unpack result C.
-            for ( int i = 0; i < m; ++i )
-                for ( int j = 0; j < n; ++j )
-                    c[ i * rs_c0 + j * cs_c0 ] =
-                        c[ i * rs_c0 + j * cs_c0 ] * *beta +
-                        c_t[ i + j * 8 ];
-
-            return ;
-        }
-    }
-
 #ifdef DEBUG
-    assert( m <= 8 );
+    assert( n <= 6 );
     assert( rs_a0 == 1 );
     assert( rs_c0 == 1 ||
             cs_c0 == 1 );
 #endif
 
-    switch ( !!pack_a << 9 | !!pack_b << 8 | m ) {
-#define EXPAND_CASE_BASE( M, PA, PB, PACKA, PACKB ) \
-    case ( PA << 9 | PB << 8 | M ): \
-        bli_dgemmsup2_cv_armv8a_asm_ ## M ## x6r_## PACKA ##_## PACKB \
-            ( m, n, k, \
+    switch ( !!pack_a << 9 | n ) {
+#define EXPAND_CASE_Milliker( N, PA, PACKA ) \
+    case ( PA << 9 | N ): \
+        bli_dgemmsup2_cv_armv8a_asm_8x## N ##m_## PACKA \
+            ( m, N, k, \
               alpha, \
               a, rs_a0, cs_a0, \
               b, rs_b0, cs_b0, \
               beta, \
               c, rs_c0, cs_c0, \
-              data, cntx, a_p, b_p \
+              data, cntx, a_p, b_p, pack_b \
             ); break;
-#define EXPAND_CASE1( M ) \
-      EXPAND_CASE_BASE( M, 1, 1, pack, pack ) \
-      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
-      EXPAND_CASE_BASE( M, 0, 1, nopack, pack ) \
-      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
-    EXPAND_CASE1(8)
-
-    // Final row-block. B tiles'll never be reused.
-#define EXPAND_CASE2( M ) \
-    case ( 1 << 9 | 1 << 8 | M ): \
-      EXPAND_CASE_BASE( M, 1, 0, pack, nopack ) \
-    case ( 0 << 9 | 1 << 8 | M ): \
-      EXPAND_CASE_BASE( M, 0, 0, nopack, nopack )
-    EXPAND_CASE2(7)
-    EXPAND_CASE2(6)
-    EXPAND_CASE2(5)
-    EXPAND_CASE2(4)
-    EXPAND_CASE2(3)
-    EXPAND_CASE2(2)
-    EXPAND_CASE2(1)
-
+    EXPAND_CASE_Milliker( 6, 1, pack )
+    EXPAND_CASE_Milliker( 6, 0, nopack )
+    case ( 1 << 9 | 5 ): EXPAND_CASE_Milliker( 5, 0, nopack )
+    case ( 1 << 9 | 4 ): EXPAND_CASE_Milliker( 4, 0, nopack )
+    case ( 1 << 9 | 3 ): EXPAND_CASE_Milliker( 3, 0, nopack )
+    case ( 1 << 9 | 2 ): EXPAND_CASE_Milliker( 2, 0, nopack )
+    case ( 1 << 9 | 1 ): EXPAND_CASE_Milliker( 1, 0, nopack )
     default:
 #ifdef DEBUG
         assert( 0 );

@@ -121,11 +121,15 @@
 " add             %[a_p], %[a_p], #8*8   \n\t" /* 6x8-specific */ \
 " ldr             q"#A3", [%[a], #16*3]  \n\t" \
 " add             %[a], %[a], %[cs_a]    \n\t"
+
+#define PRFA_LOC \
+ "prfm PLDL1STRM, [%[a_next]] \n\t" \
+ "add  %[a_next], %[a_next], %[cs_a2] \n\t"
 //
 ///////////// END bli_dgemmsup2_cv_armv8a_asm_8x6r_* /////////////
 
 #define GENDEF(PACKA,PACKB) \
-void bli_dgemmsup2_cv_armv8a_asm_8x6r_ ## PACKA ## _ ## PACKB \
+BLIS_INLINE void bli_dgemmsup2_cv_armv8a_asm_8x6_ ## PACKA ## _ ## PACKB \
     ( \
      dim_t            m, \
      dim_t            n, \
@@ -143,6 +147,7 @@ void bli_dgemmsup2_cv_armv8a_asm_8x6r_ ## PACKA ## _ ## PACKB \
 { \
   const void* a_next = bli_auxinfo_next_a( data ); \
   const void* b_next = bli_auxinfo_next_b( data ); \
+  uint64_t cs_a_next = bls_aux_ls_ext_next( data ); \
 \
   /* Typecast local copies of integers in case dim_t and inc_t are a
    * different size than is expected by load instructions. */ \
@@ -206,26 +211,26 @@ BEQ(DK_LEFT_LOOP_INIT_ ## PACKA ## _ ## PACKB) \
 \
 /* Start microkernel loop -- Special treatment for the very first loop. */ \
 " subs            %[k_mker], %[k_mker], #1        \n\t" /* Set count before final replica. */ \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(INIT,24,25,26,27,28,29,30,load,PACKA,PACKB) /* Prefetch C 1-4/8. */ \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,load,PACKA,PACKB) /* Prefetch C 5-8/8. */ \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(INIT,24,25,26,27,28,29,30,load,PACKA,PACKB) /* Prefetch C 1-4/8. */ \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,load,PACKA,PACKB) /* Prefetch C 5-8/8. */ \
 /* Branch early to avoid reading excess mem. */ \
 BEQ(DFIN_MKER_LOOP_ ## PACKA ## _ ## PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload,PACKA,PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload,PACKA,PACKB) \
 /* Start microkernel loop. */ \
 LABEL(DK_MKER_LOOP_ ## PACKA ## _ ## PACKB) \
 " subs            %[k_mker], %[k_mker], #1        \n\t" /* Set count before final replica. */ \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,28,29,30,noload,PACKA,PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,28,29,30,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,31,28,29,noload,PACKA,PACKB) \
 /* Branch early to avoid reading excess mem. */ \
 BEQ(DFIN_MKER_LOOP_ ## PACKA ## _ ## PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload,PACKA,PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,30,31,28,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC_FWD(PLAIN,24,25,26,27,29,30,31,noload,PACKA,PACKB) \
 BRANCH(DK_MKER_LOOP_ ## PACKA ## _ ## PACKB) \
 \
 /* Final microkernel loop. */ \
 LABEL(DFIN_MKER_LOOP_ ## PACKA ## _ ## PACKB) \
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,30,31,28,%[a],0,%[b_2],%[b_3],%[b_4],%[b_5],%[b_0],%[b_1],%[rs_b],load,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,30,31,28,%[a],0,%[b_2],%[b_3],%[b_4],%[b_5],%[b_0],%[b_1],%[rs_b],load,noload,PACKA,PACKB) \
 DGEMM_STORE1V_ ##PACKB (28,%[b_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (26,%[a_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (27,%[a_p],16*3) \
@@ -234,7 +239,7 @@ DGEMM_STORE1V_ ##PACKA (27,%[a_p],16*3) \
 " ldr             q26, [%[a], #16*2]              \n\t" \
 " ldr             q27, [%[a], #16*3]              \n\t" \
 " add             %[a], %[a], %[cs_a]             \n\t" \
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,29,30,31,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,29,30,31,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
 DGEMM_STORE1V_ ##PACKB (31,%[b_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (26,%[a_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (27,%[a_p],16*3) \
@@ -257,7 +262,7 @@ BEQ(DWRITE_MEM_PREP_ ## PACKA ## _ ## PACKB) \
 " ld1             {v30.d}[0], [%[b_4]], %[rs_b]   \n\t" \
 " ld1             {v30.d}[1], [%[b_5]], %[rs_b]   \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
-DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,28,29,30,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC(PLAIN,24,25,26,27,28,29,30,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
 DGEMM_STORE1V_ ##PACKB (30,%[b_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (26,%[a_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (27,%[a_p],16*3) \
@@ -281,7 +286,7 @@ BEQ(DCLEAR_CCOLS_ ## PACKA ## _ ## PACKB) \
 " ld1             {v30.d}[0], [%[b_4]], %[rs_b]   \n\t" \
 " ld1             {v30.d}[1], [%[b_5]], %[rs_b]   \n\t" \
 " sub             %[k_left], %[k_left], #1        \n\t" \
-DGEMM_8X6_MKER_LOOP_LOC(INIT,24,25,26,27,28,29,30,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
+PRFA_LOC DGEMM_8X6_MKER_LOOP_LOC(INIT,24,25,26,27,28,29,30,xzr,-1,xzr,xzr,xzr,xzr,xzr,xzr,xzr,noload,noload,PACKA,PACKB) \
 DGEMM_STORE1V_ ##PACKB (30,%[b_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (26,%[a_p],16*2) \
 DGEMM_STORE1V_ ##PACKA (27,%[a_p],16*3) \
@@ -301,9 +306,6 @@ LABEL(DWRITE_MEM_PREP_ ## PACKA ## _ ## PACKB) \
 " ld1r            {v25.2d}, [%[beta]]             \n\t" \
 "                                                 \n\t" \
 LABEL(DPREFETCH_ABNEXT_ ## PACKA ## _ ## PACKB) \
-" prfm            PLDL1KEEP, [%[a_next], 64*0]    \n\t" /* Do not know cache line size,             */ \
-" prfm            PLDL1KEEP, [%[a_next], 64*1]    \n\t" /*  issue some number of prfm instructions  */ \
-" prfm            PLDL1KEEP, [%[a_next], 64*2]    \n\t" /*  to try to activate hardware prefetcher. */ \
 " prfm            PLDL1KEEP, [%[b_next], 64*0]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*1]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*2]    \n\t" \
@@ -424,6 +426,7 @@ DSTOREC_4V_C_FWD(29,5,11,17,%[c],0,%[cs_c]) \
 LABEL(DEND_WRITE_MEM_ ## PACKA ## _ ## PACKB) \
 : [a]      "+r" (a), \
   [cs_a]   "+r" (cs_a), \
+  [cs_a2]  "+r" (cs_a_next), \
   [b_0]    "+r" (b_0), \
   [b_1]    "+r" (b_1), \
   [b_2]    "+r" (b_2), \
@@ -459,67 +462,26 @@ GENDEF(pack,pack)
 GENDEF(pack,nopack)
 GENDEF(nopack,pack)
 GENDEF(nopack,nopack)
+
+#undef PRFA_LOC
+#undef DGEMM_8X6_MKER_LOOP
+#undef DGEMM_STORE1V_nopack
+#undef DGEMM_STORE1V_pack
+#undef DGEMM_LOAD1V_noload
+#undef DGEMM_LOAD1V_load
+#undef DGEMM_LOAD1V_G_noload
+#undef DGEMM_LOAD1V_G_load
+#undef GEMM_PRFC_FH_noload
+#undef GEMM_PRFC_LH_FWD_noload
+#undef GEMM_PRFC_FH_load
+#undef GEMM_PRFC_LH_FWD_load
+#undef DLOADC_3V_R_FWD
+#undef DSTOREC_3V_R_FWD
+#undef DLOADC_4V_C_FWD
+#undef DSTOREC_4V_C_FWD
+#undef DGEMM_8X6_MKER_LOOP_LOC
+#undef DGEMM_8X6_MKER_LOOP_LOC_FWD
 #undef GENDEF
-
-#if 0
-void bli_dgemmsup2_cv_armv8a_asm_8x6r
-    (
-     dim_t            m,
-     dim_t            n,
-     dim_t            k,
-     double *restrict alpha,
-     double *restrict a, inc_t rs_a0, inc_t cs_a0,
-     double *restrict b, inc_t rs_b0, inc_t cs_b0,
-     double *restrict beta,
-     double *restrict c, inc_t rs_c0, inc_t cs_c0,
-     auxinfo_t       *data,
-     cntx_t          *cntx,
-     double *restrict a_p, int pack_a,
-     double *restrict b_p, int pack_b
-    )
-{
-    assert( m == 8 );
-    assert( n == 6 );
-    assert( rs_a0 == 1 );
-    assert( rs_c0 == 1 ||
-            cs_c0 == 1 );
-
-    switch ( !!pack_a << 1 | !!pack_b ) {
-    case ( 1 << 1 | 1 ):
-        bli_dgemmsup2_cv_armv8a_asm_8x6r_pack_pack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    case ( 1 << 1 | 0 ):
-        bli_dgemmsup2_cv_armv8a_asm_8x6r_pack_nopack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    case ( 0 << 1 | 1 ):
-        bli_dgemmsup2_cv_armv8a_asm_8x6r_nopack_pack
-            ( m, n, k,
-              alpha,
-              a, rs_a0, cs_a0,
-              b, rs_b0, cs_b0,
-              beta,
-              c, rs_c0, cs_c0,
-              data, cntx, a_p, b_p
-            ); break;
-    default:
-        assert( 0 ); break;
-    }
-}
-#endif
 
 #endif
 
