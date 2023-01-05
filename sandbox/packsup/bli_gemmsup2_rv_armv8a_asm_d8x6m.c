@@ -358,9 +358,6 @@ LABEL(DWRITE_MEM_PREP_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
 " ld1r            {v31.2d}, [%[beta]]             \n\t" \
 "                                                 \n\t" \
 LABEL(DPREFETCH_ABNEXT_ ## THISM ## _ ## PACKA ## _ ## PACKB) \
-" prfm            PLDL1KEEP, [%[a_next], 64*0]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*1]    \n\t" \
-" prfm            PLDL1KEEP, [%[a_next], 64*2]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*0]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*1]    \n\t" \
 " prfm            PLDL1KEEP, [%[b_next], 64*2]    \n\t" \
