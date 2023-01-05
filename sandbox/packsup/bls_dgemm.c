@@ -163,13 +163,13 @@ void bls_dgemm
                         if ( has_pack_a ) {
                             // Still using the already-packed a panels.
                             bli_auxinfo_set_next_a( a_panels, &data );
-                            bli_auxinfo_set_ps_b( mr, &data ); // cs_a_next.
+                            bls_aux_set_ls_ext_next( mr, &data ); // cs_a_next.
                         } else {
                             bli_auxinfo_set_next_a( a_l2, &data );
-                            bli_auxinfo_set_ps_b( cs_a, &data ); // cs_a_next.
+                            bls_aux_set_ls_ext_next( cs_a, &data ); // cs_a_next.
                         }
                     } else {
-                        bli_auxinfo_set_ps_b( cs_a, &data ); // cs_a_next.
+                        bls_aux_set_ls_ext_next( cs_a, &data ); // cs_a_next.
                         if ( ic_offset + mc < m0 )
                             bli_auxinfo_set_next_a( a_l2 + mc * rs_a, &data );
                         else
@@ -195,18 +195,18 @@ void bls_dgemm
                             bli_auxinfo_set_next_b( b_l3 + nc * cs_b, &data );
 
                     dim_t m_mker = min_( m0 - ic_offset, mc );
-                    bli_auxinfo_set_is_a( mr * k_ps, &data ); // ps_a_p.
+                    bls_aux_set_ps_ext_p( mr * k_ps, &data ); // ps_a_p.
 
                     if ( bli_rntm_pack_a( rntm ) || ( jr > 0 && has_pack_a ) ) {
                         a_uker = a_panels;
                         rs_a_uker = 1;
                         cs_a_uker = mr;
-                        bli_auxinfo_set_ps_a( bli_auxinfo_is_a( &data ), &data );
+                        bls_aux_set_ps_ext( bls_aux_ps_ext_p( &data ), &data ); // ps_a.
                     } else {
                         a_uker = a_l2;
                         rs_a_uker = rs_a;
                         cs_a_uker = cs_a;
-                        bli_auxinfo_set_ps_a( rs_a * mr, &data );
+                        bls_aux_set_ps_ext( rs_a * mr, &data ); // ps_a.
                     }
 
                     ukr_sup

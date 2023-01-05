@@ -550,9 +550,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_## M ##x8n_ ## PACKB ## _ ## BAlig
 { \
     const void* a_next = bli_auxinfo_next_b( data ); \
     const void* b_next = bli_auxinfo_next_a( data ); /* Caller specifies A as "extending". */ \
-    uint64_t ps_b      = bli_auxinfo_ps_a( data ) << 3; /* Panel stride for extending dim. */ \
-    uint64_t ps_b_p    = bli_auxinfo_is_a( data ) << 3; /* Panel stride for packed extending. */ \
-    uint64_t rs_b_next = bli_auxinfo_ps_b( data ) << 3; /* Borrow the space. */ \
+    uint64_t ps_b      = bls_aux_ps_ext     ( data ) << 3; /* Panel stride for extending dim. */ \
+    uint64_t ps_b_p    = bls_aux_ps_ext_p   ( data ) << 3; /* Panel stride for packed extending. */ \
+    uint64_t rs_b_next = bls_aux_ls_ext_next( data ) << 3; \
     uint64_t ps_b_prfm = min_(ps_b, 64*8); /* Packed A: Avoid prefetching too far away. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
@@ -754,7 +754,7 @@ void bli_dgemmsup2_rv_haswell_asm_6x8n
      double *restrict b_p, int pack_b
     )
 {
-    const inc_t ps_b0 = bli_auxinfo_ps_a( data ); // Panel stride for extending dim.
+    const inc_t ps_b0 = bls_aux_ps_ext( data ); // Panel stride for extending dim.
     const int b_align = (((uint64_t)b % (4*8)) + rs_b0 % 4 + ps_b0 % 4) == 0;
 #ifdef DEBUG
     assert( m <= 6 );

@@ -195,7 +195,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_## THISM ##x6_ ## PACKA ## _ ## PAC
 { \
   const void* a_next = bli_auxinfo_next_a( data ); \
   const void* b_next = bli_auxinfo_next_b( data ); \
-  uint64_t cs_a_next = bli_auxinfo_ps_b( data ); \
+  uint64_t cs_a_next = bls_aux_ls_ext_next( data ); \
 \
   /* Typecast local copies of integers in case dim_t and inc_t are a
    * different size than is expected by load instructions. */ \
@@ -533,14 +533,14 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
      double *restrict b_p, int pack_b \
     ) \
 { \
-    inc_t ps_a_p    = bli_auxinfo_is_a( data ); \
-    inc_t ps_a      = bli_auxinfo_ps_a( data ); \
-    inc_t cs_a_next = bli_auxinfo_ps_b( data ); \
+    inc_t ps_a_p    = bls_aux_ps_ext_p   ( data ); \
+    inc_t ps_a      = bls_aux_ps_ext     ( data ); \
+    inc_t cs_a_next = bls_aux_ls_ext_next( data ); \
     const void *next_a = bli_auxinfo_next_a( data ); \
     const void *next_b = bli_auxinfo_next_b( data ); \
 \
     bli_auxinfo_set_next_b( b_p, data ); \
-    bli_auxinfo_set_ps_b( cs_a0, data ); \
+    bls_aux_set_ls_ext_next( cs_a0, data ); \
 \
     if ( m >= 8 && pack_b ) \
     { \
@@ -548,7 +548,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
         { \
             bli_auxinfo_set_next_a( next_a, data ); \
             bli_auxinfo_set_next_b( next_b, data ); \
-            bli_auxinfo_set_ps_b( cs_a_next, data ); \
+            bls_aux_set_ls_ext_next( cs_a_next, data ); \
         } \
         else \
             bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
@@ -574,7 +574,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
         { \
             bli_auxinfo_set_next_a( next_a, data ); \
             bli_auxinfo_set_next_b( next_b, data ); \
-            bli_auxinfo_set_ps_b( cs_a_next, data ); \
+            bls_aux_set_ls_ext_next( cs_a_next, data ); \
         } \
         else \
             bli_auxinfo_set_next_a( a + bli_max(ps_a, 128), data ); \
@@ -612,7 +612,7 @@ BLIS_INLINE void bli_dgemmsup2_rv_armv8a_asm_8x ## N ## m_ ## PACKA \
 \
     bli_auxinfo_set_next_a( next_a, data ); \
     bli_auxinfo_set_next_b( next_b, data ); \
-    bli_auxinfo_set_ps_b( cs_a_next, data ); \
+    bls_aux_set_ls_ext_next( cs_a_next, data ); \
 \
     switch ( m ) \
     { \

@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+// Parameters for the ``extending'' dimension of milli-kernels.
+BLIS_INLINE void bls_aux_set_ps_ext     ( inc_t ps, auxinfo_t *data ) { bli_auxinfo_set_ps_a( ps, data ); }
+BLIS_INLINE void bls_aux_set_ps_ext_p   ( inc_t ps, auxinfo_t *data ) { bli_auxinfo_set_is_a( ps, data ); }
+BLIS_INLINE void bls_aux_set_ls_ext_next( inc_t ls, auxinfo_t *data ) { bli_auxinfo_set_ps_b( ls, data ); }
+
+BLIS_INLINE inc_t bls_aux_ps_ext     ( const auxinfo_t *data ) { return bli_auxinfo_ps_a( data ); }
+BLIS_INLINE inc_t bls_aux_ps_ext_p   ( const auxinfo_t *data ) { return bli_auxinfo_is_a( data ); }
+BLIS_INLINE inc_t bls_aux_ls_ext_next( const auxinfo_t *data ) { return bli_auxinfo_ps_b( data ); }
+
 #define SUPKER_DECL(funcname) \
 void funcname \
     ( \

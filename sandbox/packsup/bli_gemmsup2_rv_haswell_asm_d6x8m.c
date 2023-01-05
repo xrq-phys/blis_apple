@@ -435,9 +435,9 @@ BLIS_INLINE void bli_dgemmsup2_rv_haswell_asm_6x ## N ## m_ ## PACKA ## _ ## BAl
 { \
     const void* a_next = bli_auxinfo_next_a( data ); \
     const void* b_next = bli_auxinfo_next_b( data ); \
-    uint64_t ps_a      = bli_auxinfo_ps_a( data ) << 3; \
-    uint64_t ps_a_p    = bli_auxinfo_is_a( data ) << 3; /* Borrow the space. */ \
-    uint64_t cs_a_next = bli_auxinfo_ps_b( data ) << 3; /* Borrow the space. */ \
+    uint64_t ps_a      = bls_aux_ps_ext     ( data ) << 3; \
+    uint64_t ps_a_p    = bls_aux_ps_ext_p   ( data ) << 3; \
+    uint64_t cs_a_next = bls_aux_ls_ext_next( data ) << 3; \
     uint64_t ps_a_prfm = min_(ps_a, 64*8); /* Packed A: Avoid prefetching too far away. */ \
 \
     /* Typecast local copies of integers in case dim_t and inc_t are a
