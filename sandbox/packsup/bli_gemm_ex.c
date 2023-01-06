@@ -27,12 +27,6 @@ void bli_gemm_ex
 		return;
 	}
 
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
-	// x86 has larger kernel-calling overhead s.t. for skinny sizes our new method
-	// cannot fully cover the need of gemmsup.
-	if ( BLIS_SUCCESS == bli_gemmsup( alpha, a, b, beta, c, cntx, rntm ) ) return;
-#endif
-
 	// When the datatype is elidgible // & k is not too small,
 	// invoke the sandbox method where dgemmsup and dpack interleaves
 	// each other.
@@ -43,18 +37,11 @@ void bli_gemm_ex
 		bli_obj_dt( alpha ) == BLIS_DOUBLE &&
 		bli_obj_dt( beta  ) == BLIS_DOUBLE )
 	{
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
-		// AVX2 has no column-6x8 kernel. Detect column-storage and transpose.
-		if ( ( bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b ) ) != 1 )
-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
-		/* TODO: For Arm, detect small-m and transpose into small-n?
+		/* Detect small-m and transpose into small-n.
+		 * TODO: For x86 only? It seems that arm64 does not need this. */
 		if ( bli_obj_has_notrans( c ) ?
-			bli_obj_dim( BLIS_M, c ) + 8 < bli_obj_dim( BLIS_N, c ) :
-			bli_obj_dim( BLIS_N, c ) + 8 < bli_obj_dim( BLIS_M, c ) ) */
-		if ( false )
-#else
-		if ( false )
-#endif
+			( bli_obj_dim( BLIS_M, c ) < bli_min( bli_obj_dim( BLIS_N, c ), 50 ) ) :
+			( bli_obj_dim( BLIS_N, c ) < bli_min( bli_obj_dim( BLIS_M, c ), 50 ) ) )
 		{
 			// Call C' += B'A' <=> C += A B.
 			obj_t at, bt, ct;
@@ -107,6 +94,19 @@ void bli_gemm_ex
 			cs_c = bli_obj_row_stride( c );
 		}
 
+		dim_t mr, nr;
+		ukr_dgemm_sup_t milliker;
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
+		if ( cs_b == 1 ) { mr = 6; nr = 8; milliker = bli_dgemmsup2_rv_haswell_asm_6x8m; }
+		else { mr = 8; nr = 6; milliker = bli_dgemmsup2_cv_haswell_asm_8x6m; }
+#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+		milliker = rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6m :
+			bli_dgemmsup2_rv_armv8a_asm_8x6m; mr = 8; nr = 6;
+#else
+		// TODO: Use reference kernels.
+#error "This architecture is not supported yet."
+#endif
+
 		rntm_t rntm_l;
 		if ( rs_a == 1 || cs_b == 1 )
 		{
@@ -126,18 +126,7 @@ void bli_gemm_ex
 				bli_obj_buffer( beta ),
 				bli_obj_buffer( c ), rs_c, cs_c,
 				cntx, &rntm_l,
-				// bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_GEMM_UKR, cntx )
-#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
-				bli_dgemm_haswell_asm_6x8, // Don't query. 8x6 would not work.
-				( assert( cs_b == 1 ), bli_dgemmsup2_rv_haswell_asm_6x8r )
-#elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
-				bli_dgemm_armv8a_asm_8x6r, // Don't query. 6x8 would not work.
-				rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6r :
-					bli_dgemmsup2_rv_armv8a_asm_8x6r
-#else
-				// TODO: Use reference kernels.
-#error "This architecture is not supported yet."
-#endif
+				milliker, mr, nr
 			);
 			return ;
 		}
