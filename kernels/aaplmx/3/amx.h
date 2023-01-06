@@ -2,84 +2,118 @@
 
 #include <stdint.h>
 
-// TODO: is it possible to not go via x0? I'm guessing not without messing with
-// the compile process, but still, kinda ugly. might at least be possible to
-// force the compiler to get the value in x0 itself
+// Encode AMX' operand registers.
+__asm__ (
+  ".equ enc_x0,  0   \n\t"
+  ".equ enc_x1,  1   \n\t"
+  ".equ enc_x2,  2   \n\t"
+  ".equ enc_x3,  3   \n\t"
+  ".equ enc_x4,  4   \n\t"
+  ".equ enc_x5,  5   \n\t"
+  ".equ enc_x6,  6   \n\t"
+  ".equ enc_x7,  7   \n\t"
+  ".equ enc_x8,  8   \n\t"
+  ".equ enc_x9,  9   \n\t"
+  ".equ enc_x10, 10  \n\t"
+  ".equ enc_x11, 11  \n\t"
+  ".equ enc_x12, 12  \n\t"
+  ".equ enc_x13, 13  \n\t"
+  ".equ enc_x14, 14  \n\t"
+  ".equ enc_x15, 15  \n\t"
+  ".equ enc_x16, 16  \n\t"
+  ".equ enc_x17, 17  \n\t"
+  ".equ enc_x18, 18  \n\t"
+  ".equ enc_x19, 19  \n\t"
+  ".equ enc_x20, 20  \n\t"
+  ".equ enc_x21, 21  \n\t"
+  ".equ enc_x22, 22  \n\t"
+  ".equ enc_x23, 23  \n\t"
+  ".equ enc_x24, 24  \n\t"
+  ".equ enc_x25, 25  \n\t"
+  ".equ enc_x26, 26  \n\t"
+  ".equ enc_x27, 27  \n\t"
+  ".equ enc_x28, 28  \n\t"
+  ".equ enc_x29, 29  \n\t"
+  ".equ enc_x30, 30  \n\t"
+  ".macro amx opcode reg  \n\t" // Here is the instruction encoding.
+  ".word ( \\opcode | enc_\\reg ) \n\t"
+  ".endm \n\t"
+);
 
 // TODO: do I need memory as an input?
 #define AMX_LDX(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (0 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (0 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_LDY(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (1 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (1 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_STX(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (2 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (2 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_STY(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (3 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (3 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_LDZ(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (4 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (4 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_STZ(V)                                                             \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (5 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (5 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 
 #define AMX_LDZI(V)                                                            \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (6 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (6 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_STZI(V)                                                            \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (7 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (7 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 
 // TODO: probably shouldn't say these clobber memory?
 #define AMX_EXTRX(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (8 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (8 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 #define AMX_EXTRY(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (9 << 5) | 0)" ::"r"((uint64_t)V)     \
+      "amx (0x201000 | (9 << 5)), %0" ::"r"((uint64_t)V)     \
       : "x0", "memory")
 
 #define AMX_FMA64(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (10 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (10 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 #define AMX_FMS64(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (11 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (11 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 #define AMX_FMA32(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (12 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (12 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 #define AMX_FMS32(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (13 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (13 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 #define AMX_MAC16(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (14 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (14 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 #define AMX_FMA16(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (15 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (15 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 #define AMX_FMS16(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (16 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (16 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 #define AMX_START()                                                            \
@@ -95,26 +129,26 @@
 // z0[i] += x0[i] + y0[i]
 #define AMX_VECINT(V)                                                          \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (18 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (18 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 // horizontal multiply float16_ts? (doesn't fma16 have a flag for this?)
 // z0[i] += x0[i] + y0[i]
 #define AMX_VECFP(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (19 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (19 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 // uint16_t matrix multiply? (doesn't mac16 do this?)
 #define AMX_MATINT(V)                                                          \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (20 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (20 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 // float16_t matrix multiply? (doesn't fma16 do this?)
 #define AMX_MATFP(V)                                                           \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (21 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (21 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 // looks only at z0, clears it, and generates a 64-bit value in x0[0]:
@@ -126,7 +160,7 @@
 // 0xD0000000, 0xE0000000, 0xF0000000] -> fffffff0f6543210
 #define AMX_GENLUT(V)                                                          \
   __asm__ volatile(                                                            \
-      "mov x0, %0 \r\n .word (0x201000 | (22 << 5) | 0)" ::"r"((uint64_t)V)    \
+      "amx (0x201000 | (22 << 5)), %0" ::"r"((uint64_t)V)    \
       : "x0", "memory")
 
 typedef _Float16 float16;
