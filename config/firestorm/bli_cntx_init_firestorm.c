@@ -97,15 +97,15 @@ void bli_cntx_init_firestorm( cntx_t* cntx )
 	//                                           s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    12,     8,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],     8,     6,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   480,   256,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  4096,  3072,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  9600,  8184,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   480,   512,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  4096,  1000,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NC ], 10000, 10002,    -1,    -1 ); // No L3. No NC-blocking.
 
 	// Initialize sup thresholds with architecture-appropriate values.
 	//                                          s     d     c     z
-	bli_blksz_init_easy( &blkszs[ BLIS_MT ],   -1,   99,   -1,   -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NT ],   -1,   99,   -1,   -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KT ],   -1,   99,   -1,   -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MT ],   -1,   39,   -1,   -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NT ],   -1,   39,   -1,   -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KT ],   -1,   39,   -1,   -1 );
 
 	// Initialize level-3 sup blocksize objects with architecture-specific
 	// values.
