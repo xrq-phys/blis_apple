@@ -90,9 +90,9 @@ void bli_cntx_init_aaplmx( cntx_t* cntx )
 
 	// Initialize sup thresholds with architecture-appropriate values.
 	//                                          s     d     c     z
-	bli_blksz_init_easy( &thresh[ BLIS_MT ],  601,  601,   -1,   -1 );
-	bli_blksz_init_easy( &thresh[ BLIS_NT ],  601,  601,   -1,   -1 );
-	bli_blksz_init_easy( &thresh[ BLIS_KT ],  601,  601,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_MT ], 1201,  810,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_NT ], 1201,  810,   -1,   -1 );
+	bli_blksz_init_easy( &thresh[ BLIS_KT ], 1201,  810,   -1,   -1 );
 
 	// Initialize the context with the sup thresholds.
 	bli_cntx_set_l3_sup_thresh
@@ -130,8 +130,8 @@ void bli_cntx_init_aaplmx( cntx_t* cntx )
 	//                                           s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],    32,    16,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],    32,    32,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   960,   480,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC ],   380,   380,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],   384,   256,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC ],  2016,  2048,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ],  4096,  4096,    -1,    -1 );
 
 	// Update the context with the current architecture's register and cache
