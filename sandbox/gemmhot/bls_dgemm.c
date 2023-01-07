@@ -53,9 +53,6 @@ void bls_dgemm
     bli_auxinfo_set_next_a( 0, &data );
     bli_auxinfo_set_next_b( 0, &data );
 
-    // Initialize packing env vars.
-    bli_pack_init_rntm_from_env( rntm );
-
     // For querying BLIS' memory pool.
     pba_t *pba = bli_pba_query();
     mem_t  mem_a, mem_b;
