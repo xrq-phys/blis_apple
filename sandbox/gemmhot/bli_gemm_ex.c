@@ -112,6 +112,9 @@ void bli_gemm_ex
 		{
 			// Query the context for block size & packing kernels.
 			if ( cntx == NULL ) cntx = bli_gks_query_cntx();
+			
+			// Initialize packing env vars.
+			bli_pack_init_rntm_from_env( &rntm_l );
 
 			// Check the operands.
 			if ( bli_error_checking_is_enabled() )
