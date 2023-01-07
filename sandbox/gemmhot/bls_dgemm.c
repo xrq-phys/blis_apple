@@ -99,7 +99,9 @@ void bls_dgemm
                 {
                     // Ahead-of-time packing case.
                     //
-                    l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx );
+                    l1mukr_t dpackm = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MR, cntx ) == mr ?
+                        bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx ) :
+                        bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_MRXK_KER, cntx );
                     for ( dim_t jr = 0; jr < num_jr && n0 - jc_offset - jr * nr > 0; ++jr )
                     {
                         double *b_l1 = b_l3 + jr * nr * cs_b;
@@ -140,7 +142,9 @@ void bls_dgemm
                         // Ahead-of-time packing case.
                         //
                         double one = 1.0;
-                        l1mukr_t dpackm = bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_MRXK_KER, cntx );
+                        l1mukr_t dpackm = bli_cntx_get_blksz_def_dt( BLIS_DOUBLE, BLIS_MR, cntx ) == mr ?
+                            bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_MRXK_KER, cntx ) :
+                            bli_cntx_get_ukr_dt( BLIS_DOUBLE, BLIS_PACKM_NRXK_KER, cntx );
                         for ( dim_t ir = 0; ir < num_ir && m0 - ic_offset - ir * mr > 0; ++ir )
                         {
                             double *a_l1 = a_l2 + ir * mr * rs_a;
