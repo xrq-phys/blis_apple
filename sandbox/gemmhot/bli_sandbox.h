@@ -31,6 +31,20 @@ void funcname \
      double *restrict b_p, int pack_b \
     )
 
+#define PACKM_DECL(funcname, ctype) \
+void funcname \
+     ( \
+       conj_t           conja, \
+       pack_t           schema, \
+       dim_t            cdim, \
+       dim_t            k0, \
+       dim_t            k0_max, \
+       ctype*  restrict kappa, \
+       ctype*  restrict a, inc_t inca, inc_t lda, \
+       ctype*  restrict p,             inc_t ldp, \
+       cntx_t* restrict cntx \
+     )
+
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || defined(_M_IX86)
 
 SUPKER_DECL(bli_dgemmsup2_rv_haswell_asm_6x8m);
@@ -42,6 +56,12 @@ typedef typeof(&bli_dgemmsup2_rv_haswell_asm_6x8m) ukr_dgemm_sup_t;
 
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
 
+#ifdef __APPLE__
+PACKM_DECL(bli_spackm_appleamx2_asm_32xk, float);
+PACKM_DECL(bli_dpackm_appleamx2_asm_32xk, double);
+PACKM_DECL(bli_dpackm_appleamx2_asm_16xk, double);
+SUPKER_DECL(bli_dgemmsup2_appleamx2_asm_16x32m);
+#endif
 SUPKER_DECL(bli_dgemmsup2_rv_armv8a_asm_8x6m);
 SUPKER_DECL(bli_dgemmsup2_cv_armv8a_asm_8x6m);
 typedef typeof(&bli_dpackm_armv8a_int_8xk) l1mukr_t;

@@ -1,4 +1,5 @@
 #include "blis.h"
+#include "amx.h"
 #include <assert.h>
 
 void bli_gemm_ex
@@ -100,8 +101,12 @@ void bli_gemm_ex
 		if ( cs_b == 1 ) { mr = 6; nr = 8; milliker = bli_dgemmsup2_rv_haswell_asm_6x8m; }
 		else { mr = 8; nr = 6; milliker = bli_dgemmsup2_cv_haswell_asm_8x6m; }
 #elif defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC)
+#ifdef __APPLE__
+		milliker = bli_dgemmsup2_appleamx2_asm_16x32m; mr = 16; nr = 32;
+#else
 		milliker = rs_a == 1 ? bli_dgemmsup2_cv_armv8a_asm_8x6m :
 			bli_dgemmsup2_rv_armv8a_asm_8x6m; mr = 8; nr = 6;
+#endif
 #else
 		// TODO: Use reference kernels.
 #error "This architecture is not supported yet."
@@ -120,6 +125,34 @@ void bli_gemm_ex
 			if ( bli_error_checking_is_enabled() )
 				bli_gemm_check( alpha, a, b, beta, c, cntx );
 
+#if ( defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC) ) && defined(__APPLE__)
+			// Change packing configuration.
+			// TODO: Prefer packing B instead of A.
+			if ( rs_a != 1 ) bli_rntm_set_pack_a( true, &rntm_l );
+			if ( cs_b != 1 ) bli_rntm_set_pack_b( true, &rntm_l );
+
+			// Change kernel & size config.
+			bli_cntx_set_ukrs
+			( cntx,
+			  BLIS_PACKM_MRXK_KER, BLIS_FLOAT,  bli_spackm_appleamx2_asm_32xk,
+			  BLIS_PACKM_NRXK_KER, BLIS_FLOAT,  bli_spackm_appleamx2_asm_32xk,
+			  BLIS_PACKM_MRXK_KER, BLIS_DOUBLE, bli_dpackm_appleamx2_asm_16xk,
+			  BLIS_PACKM_NRXK_KER, BLIS_DOUBLE, bli_dpackm_appleamx2_asm_32xk,
+			  BLIS_VA_END );
+			bli_cntx_set_blksz_def_dt( BLIS_DOUBLE, BLIS_MR,    16, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_DOUBLE, BLIS_NR,    32, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_DOUBLE, BLIS_MC,   256, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_DOUBLE, BLIS_KC,  2001, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_DOUBLE, BLIS_NC,  8192, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_FLOAT,  BLIS_MR,    32, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_FLOAT,  BLIS_NR,    32, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_FLOAT,  BLIS_MC,   384, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_FLOAT,  BLIS_KC,  2001, cntx );
+			bli_cntx_set_blksz_def_dt( BLIS_FLOAT,  BLIS_NC, 16384, cntx );
+
+			// Init hardware.
+			AMX_START();
+#endif
 			bls_dgemm
 			(
 				m, n, k,
@@ -131,6 +164,9 @@ void bli_gemm_ex
 				cntx, &rntm_l,
 				milliker, mr, nr
 			);
+#if ( defined(__aarch64__) || defined(__arm__) || defined(_M_ARM) || defined(_ARCH_PPC) ) && defined(__APPLE__)
+			AMX_STOP();
+#endif
 			return ;
 		}
 
