@@ -9,6 +9,7 @@ Known issues:
 - TRSM might fail. Try commenting out function call to `bli_cntx_set_packm_kers` in `config/aaplmx/bli_cntx_init_aaplmx.c` if your need TRSM to work.
 
 Performance:
+
   ![](docs/graphs/aaplmx/output_st_dgemm_asm_blis.png)
   ![](docs/graphs/aaplmx/output_st_sgemm_asm_blis.png)
 
