@@ -295,72 +295,47 @@ BLIS_INLINE void bli_dgemmsup2_appleamx2_asm_16x32
             // Reload beta into X.
             AMX_MEM( LDX, beta_vec, 1 );
 
-            // Load blocks (0, 0), (0, 1), (0, 2) and (0, 3).
-            for (int i = 0; i < 8; ++i) {
-                AMX_MEM( LDY, c_ldr + i * rs_c + 0 , 4 ); // TODO: Use 0-3?
-                AMX_MEM( LDY, c_ldr + i * rs_c + 8 , 5 );
-                AMX_MEM( LDY, c_ldr + i * rs_c + 16, 6 );
-                AMX_MEM( LDY, c_ldr + i * rs_c + 24, 7 );
+            for ( int i = 0; i < 8; ++i ) {
+                AMX_MEM( LDY, c_ldr +  i      * rs_c + 0 , 0 ); // TODO: Use 0-3?
+                AMX_MEM( LDY, c_ldr +  i      * rs_c + 8 , 1 );
+                AMX_MEM( LDY, c_ldr +  i      * rs_c + 16, 2 );
+                AMX_MEM( LDY, c_ldr +  i      * rs_c + 24, 3 );
+                AMX_MEM( LDY, c_ldr + (i + 8) * rs_c + 0 , 4 );
+                AMX_MEM( LDY, c_ldr + (i + 8) * rs_c + 8 , 5 );
+                AMX_MEM( LDY, c_ldr + (i + 8) * rs_c + 16, 6 );
+                AMX_MEM( LDY, c_ldr + (i + 8) * rs_c + 24, 7 );
 
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 0 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 1 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 6, 2 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 7, 3 );
-            }
-            c_ldr += 8 * rs_c;
-
-            // Load blocks (1, 0), (1, 1), (1, 2) and (1, 3).
-            for (int i = 0; i < 8; ++i) {
-                AMX_MEM( LDY, c_ldr + i * rs_c + 0 , 4 );
-                AMX_MEM( LDY, c_ldr + i * rs_c + 8 , 5 );
-                AMX_MEM( LDY, c_ldr + i * rs_c + 16, 6 );
-                AMX_MEM( LDY, c_ldr + i * rs_c + 24, 7 );
-
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 4, 4 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 5, 5 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 6, 6 );
-                AMX_FMA64_SELROW_REGALIGNED( i, 1, 7, 7 );
+                AMX_FMA64_SELROW_REGALIGNED( i,     1, 0, 0 );
+                AMX_FMA64_SELROW_REGALIGNED( i,     1, 1, 1 );
+                AMX_FMA64_SELROW_REGALIGNED( i,     1, 2, 2 );
+                AMX_FMA64_SELROW_REGALIGNED( i,     1, 3, 3 );
+                AMX_FMA64_SELROW_REGALIGNED( i + 8, 1, 4, 4 );
+                AMX_FMA64_SELROW_REGALIGNED( i + 8, 1, 5, 5 );
+                AMX_FMA64_SELROW_REGALIGNED( i + 8, 1, 6, 6 );
+                AMX_FMA64_SELROW_REGALIGNED( i + 8, 1, 7, 7 );
             }
         }
         else
         {
             // Load blocks (0, 0) and (0, 1).
             for ( int i = 0; i < 8; ++i ) {
-                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 4 );
-                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 5 );
+                AMX_MEM( LDX, c_ldr + (i + 0 ) * cs_c + 0, 0 );
+                AMX_MEM( LDX, c_ldr + (i + 0 ) * cs_c + 8, 4 );
+                AMX_MEM( LDX, c_ldr + (i + 8 ) * cs_c + 0, 1 );
+                AMX_MEM( LDX, c_ldr + (i + 8 ) * cs_c + 8, 5 );
+                AMX_MEM( LDX, c_ldr + (i + 16) * cs_c + 0, 2 );
+                AMX_MEM( LDX, c_ldr + (i + 16) * cs_c + 8, 6 );
+                AMX_MEM( LDX, c_ldr + (i + 24) * cs_c + 0, 3 );
+                AMX_MEM( LDX, c_ldr + (i + 24) * cs_c + 8, 7 );
 
-                AMX_FMA64_SELCOL_REGALIGNED( i, 4, 1, 0 );
-                AMX_FMA64_SELCOL_REGALIGNED( i, 5, 1, 4 );
-            }
-            c_ldr += 8 * cs_c;
-
-            // Load blocks (1, 0) and (1, 1).
-            for ( int i = 0; i < 8; ++i ) {
-                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 4 );
-                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 5 );
-
-                AMX_FMA64_SELCOL_REGALIGNED( i, 4, 1, 1 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 0, 1, 0 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 4, 1, 4 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 1, 1, 1 );
                 AMX_FMA64_SELCOL_REGALIGNED( i, 5, 1, 5 );
-            }
-            c_ldr += 8 * cs_c;
-
-            // Load blocks (2, 0) and (2, 1).
-            for ( int i = 0; i < 8; ++i ) {
-                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 4 );
-                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 5 );
-
-                AMX_FMA64_SELCOL_REGALIGNED( i, 4, 1, 2 );
-                AMX_FMA64_SELCOL_REGALIGNED( i, 5, 1, 6 );
-            }
-            c_ldr += 8 * cs_c;
-
-            // Load blocks (3, 0) and (3, 1).
-            for ( int i = 0; i < 8; ++i ) {
-                AMX_MEM( LDX, c_ldr + i * cs_c + 0, 4 );
-                AMX_MEM( LDX, c_ldr + i * cs_c + 8, 5 );
-
-                AMX_FMA64_SELCOL_REGALIGNED( i, 4, 1, 3 );
-                AMX_FMA64_SELCOL_REGALIGNED( i, 5, 1, 7 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 2, 1, 2 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 6, 1, 6 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 3, 1, 3 );
+                AMX_FMA64_SELCOL_REGALIGNED( i, 7, 1, 7 );
             }
         }
     }
@@ -398,31 +373,15 @@ BLIS_INLINE void bli_dgemmsup2_appleamx2_asm_16x32
     {
         // Store blocks (0, 0) and (1, 0)
         for (int i = 0; i < 8; ++i) {
-            AMX_MEM( STZ, c_s + i * cs_c_s + 0, i * 8 + 0 );
-            AMX_MEM( STZ, c_s + i * cs_c_s + 8, i * 8 + 4 );
+            AMX_MEM( STZ, c_s + (i + 0 ) * cs_c_s + 0, i * 8 + 0 );
+            AMX_MEM( STZ, c_s + (i + 0 ) * cs_c_s + 8, i * 8 + 4 );
+            AMX_MEM( STZ, c_s + (i + 8 ) * cs_c_s + 0, i * 8 + 1 );
+            AMX_MEM( STZ, c_s + (i + 8 ) * cs_c_s + 8, i * 8 + 5 );
+            AMX_MEM( STZ, c_s + (i + 16) * cs_c_s + 0, i * 8 + 2 );
+            AMX_MEM( STZ, c_s + (i + 16) * cs_c_s + 8, i * 8 + 6 );
+            AMX_MEM( STZ, c_s + (i + 24) * cs_c_s + 0, i * 8 + 3 );
+            AMX_MEM( STZ, c_s + (i + 24) * cs_c_s + 8, i * 8 + 7 );
         }
-        c_s += 8 * cs_c_s;
-
-        // Store blocks (0, 1) and (1, 1)
-        for (int i = 0; i < 8; ++i) {
-            AMX_MEM( STZ, c_s + i * cs_c_s + 0, i * 8 + 1 );
-            AMX_MEM( STZ, c_s + i * cs_c_s + 8, i * 8 + 5 );
-        }
-        c_s += 8 * cs_c_s;
-
-        // Store blocks (0, 2) and (1, 2)
-        for (int i = 0; i < 8; ++i) {
-            AMX_MEM( STZ, c_s + i * cs_c_s + 0, i * 8 + 2 );
-            AMX_MEM( STZ, c_s + i * cs_c_s + 8, i * 8 + 6 );
-        }
-        c_s += 8 * cs_c_s;
-
-        // Store blocks (0, 3) and (1, 3)
-        for (int i = 0; i < 8; ++i) {
-            AMX_MEM( STZ, c_s + i * cs_c_s + 0, i * 8 + 3 );
-            AMX_MEM( STZ, c_s + i * cs_c_s + 8, i * 8 + 7 );
-        }
-        c_s -= 24 * cs_c_s;
     }
 
     if ( c_s != c )
